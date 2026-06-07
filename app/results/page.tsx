@@ -67,11 +67,19 @@ export default function ResultsPage() {
   const [selectedMatch,   setSelectedMatch]   = useState<Match | null>(null);
   const [savedMatchNames, setSavedMatchNames] = useState<Set<string>>(new Set());
   const [textPiece,       setTextPiece]       = useState<{ name: string; category: string; description: string } | null>(null);
+  const [scrapedProduct,  setScrapedProduct]  = useState<{ name: string; price: string; store: string } | null>(null);
 
   useEffect(() => {
     // Always pre-load saved items
     const existing: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
     setSavedMatchNames(new Set(existing.map(s => s.name)));
+
+    // Scraped product metadata (cleared after reading to avoid stale state)
+    const scraped = localStorage.getItem("nomi_scraped_product");
+    if (scraped) {
+      setScrapedProduct(JSON.parse(scraped));
+      localStorage.removeItem("nomi_scraped_product");
+    }
 
     // ── Text-only path (from Explore "Find this" via query params) ────────────
     const params   = new URLSearchParams(window.location.search);
@@ -169,6 +177,25 @@ export default function ResultsPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={image} alt="Your piece" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", objectPosition: "top center", display: "block" }} />
                 <div style={{ padding: "14px 16px 16px" }}>
+                  {scrapedProduct && (
+                    <div style={{ marginBottom: result ? "12px" : "0" }}>
+                      <p style={{ fontSize: "16px", fontWeight: 700, letterSpacing: "-0.3px", color: "#000", marginBottom: "4px", lineHeight: 1.3 }}>
+                        {scrapedProduct.name}
+                      </p>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        {scrapedProduct.store && (
+                          <span style={{ fontSize: "12px", color: "#aaa" }}>{scrapedProduct.store}</span>
+                        )}
+                        {scrapedProduct.store && scrapedProduct.price && (
+                          <span style={{ fontSize: "12px", color: "#ddd" }}>·</span>
+                        )}
+                        {scrapedProduct.price && (
+                          <span style={{ fontSize: "13px", fontWeight: 600, color: "#c9a96e" }}>{scrapedProduct.price}</span>
+                        )}
+                      </div>
+                      {result && <div style={{ height: "1px", background: "#e8e4dd", margin: "12px 0 10px" }} />}
+                    </div>
+                  )}
                   {result ? (
                     <>
                       <div style={{ display: "flex", gap: "7px", marginBottom: "10px", flexWrap: "wrap" }}>

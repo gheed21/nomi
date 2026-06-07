@@ -108,6 +108,9 @@ export default function HomePage() {
   const [filters,         setFilters]         = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen,     setFiltersOpen]     = useState(false);
 
+  const [urlLoading,  setUrlLoading]  = useState(false);
+  const [scrapeError, setScrapeError] = useState(false);
+
   const hasInput = !!photo || url.trim().length > 0;
   const count    = activeCount(filters);
 
@@ -122,11 +125,35 @@ export default function HomePage() {
     reader.readAsDataURL(file);
   }
 
-  function handleFindMatches() {
-    if (!photo) return;
-    localStorage.setItem("nomi_current_upload", photo);
-    localStorage.setItem("nomi_current_filters", JSON.stringify(filters));
-    router.push("/results");
+  async function handleFindMatches() {
+    if (photo) {
+      localStorage.removeItem("nomi_scraped_product");
+      localStorage.setItem("nomi_current_upload", photo);
+      localStorage.setItem("nomi_current_filters", JSON.stringify(filters));
+      router.push("/results");
+    } else if (url.trim()) {
+      setUrlLoading(true);
+      setScrapeError(false);
+      try {
+        const res  = await fetch("/api/scrape-product", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url.trim() }),
+        });
+        const data = await res.json();
+        if (!data.success) { setScrapeError(true); return; }
+        localStorage.setItem("nomi_current_upload",   data.image);
+        localStorage.setItem("nomi_current_filters",  JSON.stringify(filters));
+        localStorage.setItem("nomi_scraped_product",  JSON.stringify({
+          name: data.name, price: data.price, store: data.store,
+        }));
+        router.push("/results");
+      } catch {
+        setScrapeError(true);
+      } finally {
+        setUrlLoading(false);
+      }
+    }
   }
 
   function openSearch(s: RecentSearch) {
@@ -188,8 +215,8 @@ export default function HomePage() {
               width: "100%", height: photo ? "auto" : "196px",
               minHeight: photo ? "160px" : undefined,
               borderRadius: "16px",
-              border: `1.5px dashed ${dragOver ? "#c9a96e" : photo ? "#c9a96e" : "#d8d8d8"}`,
-              background: dragOver ? "#f7f0e4" : photo ? "#f7f6f3" : "#fafafa",
+              border: `1.5px dashed ${dragOver || scrapeError ? "#c9a96e" : photo ? "#c9a96e" : "#d8d8d8"}`,
+              background: dragOver || scrapeError ? "#f7f0e4" : photo ? "#f7f6f3" : "#fafafa",
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
               gap: "12px", cursor: photo ? "default" : "pointer",
               transition: "border-color 0.15s, background 0.15s",
@@ -226,9 +253,16 @@ export default function HomePage() {
           </div>
 
           {/* URL */}
-          <input type="url" placeholder="Paste a product link" value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            style={{ width: "100%", padding: "15px 16px", borderRadius: "16px", border: `1.5px solid ${url ? "#000" : "#e8e8e8"}`, fontSize: "15px", color: "#000", background: "#fff", transition: "border-color 0.15s" }} />
+          <div>
+            <input type="url" placeholder="Paste a product link" value={url}
+              onChange={(e) => { setUrl(e.target.value); setScrapeError(false); }}
+              style={{ width: "100%", padding: "15px 16px", borderRadius: "16px", border: `1.5px solid ${scrapeError ? "#ef4444" : url ? "#000" : "#e8e8e8"}`, fontSize: "15px", color: "#000", background: "#fff", transition: "border-color 0.15s" }} />
+            {scrapeError && (
+              <p style={{ fontSize: "13px", color: "#ef4444", marginTop: "8px", lineHeight: 1.5 }}>
+                We couldn&rsquo;t read that link. Try uploading a photo instead.
+              </p>
+            )}
+          </div>
 
           {/* ── Filters ────────────────────────────────────────────────────── */}
           <div>
@@ -454,15 +488,16 @@ export default function HomePage() {
           </div>
 
           {/* CTA */}
-          <button onClick={handleFindMatches} style={{
+          <button onClick={handleFindMatches} disabled={!hasInput || urlLoading} style={{
             width: "100%", padding: "16px", borderRadius: "16px", border: "none",
-            background: hasInput ? "#000" : "#e8e8e8",
-            color: hasInput ? "#fff" : "#aaa",
+            background: hasInput && !urlLoading ? "#000" : "#e8e8e8",
+            color: hasInput && !urlLoading ? "#fff" : "#aaa",
             fontSize: "15px", fontWeight: 600,
-            cursor: hasInput ? "pointer" : "default",
+            cursor: hasInput && !urlLoading ? "pointer" : "default",
             letterSpacing: "-0.1px", transition: "background 0.15s, color 0.15s", marginTop: "4px",
+            animation: urlLoading ? "nomi-pulse 1.4s ease-in-out infinite" : "none",
           }}>
-            Find matches
+            {urlLoading ? "Reading product..." : "Find matches"}
           </button>
         </div>
 
