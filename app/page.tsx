@@ -1,0 +1,605 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import NomiNav from "./components/NomiNav";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type RecStyle = "specific" | "direction";
+
+export type Filters = {
+  colors:              string[];
+  customColor:         string;
+  priceRange:          [number, number];
+  sortOrder:           "low-high" | "high-low";
+  itemCategory:        string;
+  itemSubcategories:   string[];
+  secondhandOnly:      boolean;
+  recommendationStyle: RecStyle;
+  description:         string;
+};
+
+const PRICE_MAX = 500;
+
+const DEFAULT_FILTERS: Filters = {
+  colors:              [],
+  customColor:         "",
+  priceRange:          [0, PRICE_MAX],
+  sortOrder:           "low-high",
+  itemCategory:        "",
+  itemSubcategories:   [],
+  secondhandOnly:      false,
+  recommendationStyle: "specific",
+  description:         "",
+};
+
+const SUBCATEGORIES: Record<string, string[]> = {
+  Tops:       ["Tank top", "Sleeveless top", "Short sleeve top", "Long sleeve top", "Blouse", "Button-down", "Sweatshirt", "Hoodie", "Crop top", "Bodysuit", "Corset"],
+  Bottoms:    ["Jeans", "Straight leg jeans", "Wide leg jeans", "Cargo trousers", "Tailored trousers", "Shorts", "Mini skirt", "Midi skirt", "Maxi skirt", "Leggings"],
+  Shoes:      ["Heels", "Block heels", "Mules", "Sneakers", "Loafers", "Boots", "Ankle boots", "Sandals", "Flip flops", "Flats", "Platform shoes"],
+  Bags:       ["Tote", "Crossbody", "Clutch", "Shoulder bag", "Mini bag", "Backpack"],
+  Outerwear:  ["Blazer", "Leather jacket", "Denim jacket", "Coat", "Trench coat", "Puffer", "Cardigan"],
+  Accessories:["Belt", "Hat", "Scarf", "Sunglasses", "Jewelry"],
+};
+const CATEGORIES = Object.keys(SUBCATEGORIES);
+
+const SWATCHES = [
+  { name: "White",     hex: "#FFFFFF" },
+  { name: "Cream",     hex: "#FFF8E7" },
+  { name: "Black",     hex: "#111111" },
+  { name: "Grey",      hex: "#9E9E9E" },
+  { name: "Navy",      hex: "#1A237E" },
+  { name: "Brown",     hex: "#6D4C41" },
+  { name: "Camel",     hex: "#C8A96E" },
+  { name: "Tan",       hex: "#D4A76A" },
+  { name: "Burgundy",  hex: "#7B1C2A" },
+  { name: "Forest",    hex: "#2E7D32" },
+  { name: "Olive",     hex: "#827717" },
+  { name: "Sage",      hex: "#8A9A73" },
+  { name: "Pink",      hex: "#F48FB1" },
+  { name: "Blush",     hex: "#FFCDD2" },
+  { name: "Red",       hex: "#C62828" },
+  { name: "Orange",    hex: "#E64A19" },
+  { name: "Yellow",    hex: "#F9A825" },
+  { name: "Cobalt",    hex: "#1565C0" },
+  { name: "Lavender",  hex: "#CE93D8" },
+  { name: "Purple",    hex: "#6A1B9A" },
+];
+
+function isLight(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 140;
+}
+
+type Analysis    = { color: string; category: string; aesthetic: string };
+type Match       = { name: string; store?: string; price?: string; reason: string; searchUrl?: string; direction?: string };
+type Result      = { analysis: Analysis; matches: Match[] };
+type RecentSearch = { id: string; image: string; result: Result; searchedAt: number; saved: boolean };
+
+function activeCount(f: Filters): number {
+  return (f.colors.length > 0 || f.customColor.trim().length > 0 ? 1 : 0)
+    + (f.priceRange[0] > 0 || f.priceRange[1] < PRICE_MAX ? 1 : 0)
+    + (f.itemCategory.length > 0 || f.secondhandOnly ? 1 : 0)
+    + (f.recommendationStyle !== "specific" ? 1 : 0)
+    + (f.description.trim().length > 0 ? 1 : 0);
+}
+
+function timeAgo(ts: number): string {
+  const d = Date.now() - ts, m = Math.floor(d / 60000);
+  if (m < 2)  return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function HomePage() {
+  const router  = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [photo,           setPhoto]           = useState<string | null>(null);
+  const [url,             setUrl]             = useState("");
+  const [dragOver,        setDragOver]        = useState(false);
+  const [recentSearches,  setRecentSearches]  = useState<RecentSearch[]>([]);
+  const [filters,         setFilters]         = useState<Filters>(DEFAULT_FILTERS);
+  const [filtersOpen,     setFiltersOpen]     = useState(false);
+
+  const hasInput = !!photo || url.trim().length > 0;
+  const count    = activeCount(filters);
+
+  useEffect(() => {
+    setRecentSearches(JSON.parse(localStorage.getItem("nomi_recent_searches") ?? "[]"));
+  }, []);
+
+  function handleFile(file: File) {
+    if (!file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = (e) => setPhoto(e.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function handleFindMatches() {
+    if (!photo) return;
+    localStorage.setItem("nomi_current_upload", photo);
+    localStorage.setItem("nomi_current_filters", JSON.stringify(filters));
+    router.push("/results");
+  }
+
+  function openSearch(s: RecentSearch) {
+    localStorage.setItem("nomi_current_upload", s.image);
+    localStorage.setItem("nomi_current_result", JSON.stringify(s));
+    router.push("/results");
+  }
+
+  function toggleColor(name: string) {
+    setFilters(f => ({
+      ...f,
+      colors: f.colors.includes(name)
+        ? f.colors.filter(c => c !== name)
+        : [...f.colors, name],
+    }));
+  }
+
+  function selectCategory(cat: string) {
+    setFilters(f => ({
+      ...f,
+      itemCategory:      f.itemCategory === cat ? "" : cat,
+      itemSubcategories: [],
+    }));
+  }
+
+  function toggleSubcategory(sub: string) {
+    setFilters(f => ({
+      ...f,
+      itemSubcategories: f.itemSubcategories.includes(sub)
+        ? f.itemSubcategories.filter(s => s !== sub)
+        : [...f.itemSubcategories, sub],
+    }));
+  }
+
+  return (
+    <>
+    <div style={{ minHeight: "100vh", background: "#fff", display: "flex", flexDirection: "column", alignItems: "center", padding: "0 20px 80px" }}>
+      <div style={{ width: "100%", maxWidth: "420px" }}>
+
+        {/* Wordmark */}
+        <header style={{ textAlign: "center", padding: "56px 0 44px" }}>
+          <p style={{ fontSize: "38px", fontWeight: 500, letterSpacing: "-1.5px", color: "#c9a96e", lineHeight: 1 }}>nomi</p>
+          <p style={{ fontSize: "14px", color: "#6b6b6b", marginTop: "10px", letterSpacing: "-0.1px" }}>
+            Find matching pieces from any store
+          </p>
+        </header>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }}
+            onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])} />
+
+          {/* Upload */}
+          <button
+            onClick={() => { if (!photo) fileRef.current?.click(); }}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+            style={{
+              width: "100%", height: photo ? "auto" : "196px",
+              minHeight: photo ? "160px" : undefined,
+              borderRadius: "16px",
+              border: `1.5px dashed ${dragOver ? "#c9a96e" : photo ? "#c9a96e" : "#d8d8d8"}`,
+              background: dragOver ? "#f7f0e4" : photo ? "#f7f6f3" : "#fafafa",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              gap: "12px", cursor: photo ? "default" : "pointer",
+              transition: "border-color 0.15s, background 0.15s",
+              padding: 0, overflow: "hidden",
+            }}
+          >
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="Uploaded piece" style={{ width: "100%", maxHeight: "300px", objectFit: "cover", display: "block" }} />
+            ) : (
+              <>
+                <div style={{ width: "48px", height: "48px", borderRadius: "14px", background: "#f0ede8", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <CameraIcon />
+                </div>
+                <div style={{ textAlign: "center" }}>
+                  <p style={{ fontSize: "15px", fontWeight: 500, color: "#000", letterSpacing: "-0.2px" }}>Upload a photo of any piece</p>
+                  <p style={{ fontSize: "12px", color: "#aaa", marginTop: "4px" }}>JPG, PNG or HEIC · tap or drag</p>
+                </div>
+              </>
+            )}
+          </button>
+
+          {photo && (
+            <button onClick={() => setPhoto(null)} style={{ alignSelf: "flex-start", fontSize: "12px", color: "#aaa", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: "2px" }}>
+              Remove photo
+            </button>
+          )}
+
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "2px 0" }}>
+            <div style={{ flex: 1, height: "1px", background: "#ebebeb" }} />
+            <span style={{ fontSize: "12px", color: "#bbb" }}>or</span>
+            <div style={{ flex: 1, height: "1px", background: "#ebebeb" }} />
+          </div>
+
+          {/* URL */}
+          <input type="url" placeholder="Paste a product link" value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            style={{ width: "100%", padding: "15px 16px", borderRadius: "16px", border: `1.5px solid ${url ? "#000" : "#e8e8e8"}`, fontSize: "15px", color: "#000", background: "#fff", transition: "border-color 0.15s" }} />
+
+          {/* ── Filters ────────────────────────────────────────────────────── */}
+          <div>
+            <button
+              onClick={() => setFiltersOpen(o => !o)}
+              style={{
+                display: "flex", alignItems: "center", gap: "6px",
+                padding: "8px 14px", borderRadius: "99px",
+                border: `1.5px solid ${count > 0 ? "#c9a96e" : "#e8e8e8"}`,
+                background: count > 0 ? "#f7f0e4" : "#fff",
+                color: count > 0 ? "#c9a96e" : "#6b6b6b",
+                fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.15s",
+              }}
+            >
+              <FilterIcon />
+              Filters
+              {count > 0 && (
+                <span style={{ background: "#c9a96e", color: "#fff", borderRadius: "99px", padding: "1px 7px", fontSize: "10px", fontWeight: 700 }}>
+                  {count}
+                </span>
+              )}
+              <ChevronDown open={filtersOpen} />
+            </button>
+
+            <div style={{ maxHeight: filtersOpen ? "1200px" : "0px", overflow: "hidden", transition: "max-height 0.35s ease" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "20px" }}>
+
+                {/* ── Color swatches ── */}
+                <div>
+                  <FilterLabel>Color</FilterLabel>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "10px", marginBottom: "12px" }}>
+                    {SWATCHES.map(s => {
+                      const selected = filters.colors.includes(s.name);
+                      const light    = isLight(s.hex);
+                      return (
+                        <button
+                          key={s.name}
+                          onClick={() => toggleColor(s.name)}
+                          title={s.name}
+                          style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}
+                        >
+                          <div style={{
+                            width: "44px", height: "44px", borderRadius: "50%",
+                            background: s.hex,
+                            border: selected
+                              ? "2.5px solid #c9a96e"
+                              : light ? "1.5px solid #ddd" : "1.5px solid transparent",
+                            boxShadow: selected ? "0 0 0 3px #f7f0e4" : "none",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            transition: "all 0.1s",
+                            transform: selected ? "scale(1.08)" : "scale(1)",
+                          }}>
+                            {selected && (
+                              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                                <path d="M2.5 7l3 3L11.5 4" stroke={light ? "#333" : "#fff"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </div>
+                          <span style={{ fontSize: "9px", color: "#999", lineHeight: 1, textAlign: "center" }}>
+                            {s.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Other color..."
+                    value={filters.customColor}
+                    onChange={(e) => setFilters(f => ({ ...f, customColor: e.target.value }))}
+                    style={{
+                      width: "100%", padding: "11px 14px", borderRadius: "12px",
+                      border: `1.5px solid ${filters.customColor ? "#000" : "#e8e8e8"}`,
+                      fontSize: "13px", color: "#000", background: "#fff",
+                      transition: "border-color 0.15s",
+                    }}
+                  />
+                </div>
+
+                {/* ── Price range ── */}
+                <div>
+                  <FilterLabel>Budget</FilterLabel>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "18px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "#000", letterSpacing: "-0.3px" }}>
+                      ${filters.priceRange[0]}
+                    </span>
+                    <span style={{ fontSize: "13px", color: "#aaa", margin: "0 2px" }}>—</span>
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: "#000", letterSpacing: "-0.3px" }}>
+                      {filters.priceRange[1] >= PRICE_MAX ? "$500+" : `$${filters.priceRange[1]}`}
+                    </span>
+                  </div>
+
+                  <PriceRangeSlider value={filters.priceRange} onChange={(v) => setFilters(f => ({ ...f, priceRange: v }))} />
+
+                  {/* Sort toggle */}
+                  <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+                    {(["low-high", "high-low"] as const).map((s) => {
+                      const on = filters.sortOrder === s;
+                      return (
+                        <button key={s} onClick={() => setFilters(f => ({ ...f, sortOrder: s }))} style={{
+                          flex: 1, padding: "8px 0", borderRadius: "99px", border: "1.5px solid",
+                          borderColor: on ? "#c9a96e" : "#e8e8e8",
+                          background: on ? "#f7f0e4" : "#fff",
+                          color: on ? "#c9a96e" : "#6b6b6b",
+                          fontSize: "12px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+                        }}>
+                          {s === "low-high" ? "Low to high" : "High to low"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── What are you looking for? ── */}
+                <div>
+                  <FilterLabel>What are you looking for?</FilterLabel>
+                  {/* Category pills */}
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: filters.itemCategory ? "14px" : "0" }}>
+                    {CATEGORIES.map(cat => {
+                      const on = filters.itemCategory === cat;
+                      return (
+                        <button key={cat} onClick={() => selectCategory(cat)} style={{
+                          padding: "7px 14px", borderRadius: "99px", border: "1.5px solid",
+                          borderColor: on ? "#000" : "#e8e8e8",
+                          background: on ? "#000" : "#fff",
+                          color: on ? "#fff" : "#6b6b6b",
+                          fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+                        }}>
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Subcategories + secondhand (when a category is selected) */}
+                  {filters.itemCategory && (
+                    <div style={{ background: "#f7f6f3", borderRadius: "14px", padding: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+                        {SUBCATEGORIES[filters.itemCategory].map(sub => {
+                          const on = filters.itemSubcategories.includes(sub);
+                          return (
+                            <button key={sub} onClick={() => toggleSubcategory(sub)} style={{
+                              padding: "6px 12px", borderRadius: "99px", border: "1.5px solid",
+                              borderColor: on ? "#c9a96e" : "#e0dbd4",
+                              background: on ? "#f7f0e4" : "#fff",
+                              color: on ? "#c9a96e" : "#6b6b6b",
+                              fontSize: "12px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+                            }}>
+                              {sub}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Secondhand toggle */}
+                      <div style={{ borderTop: "1px solid #ede9e4", paddingTop: "14px" }}>
+                        <Toggle
+                          label="Secondhand only"
+                          value={filters.secondhandOnly}
+                          onChange={(v) => setFilters(f => ({ ...f, secondhandOnly: v }))}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Recommendation style ── */}
+                <div>
+                  <FilterLabel>Recommendation style</FilterLabel>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {([
+                      { key: "specific",  label: "Take me to a specific product" },
+                      { key: "direction", label: "Show me the general direction" },
+                    ] as { key: RecStyle; label: string }[]).map(({ key, label }) => {
+                      const on = filters.recommendationStyle === key;
+                      return (
+                        <button key={key} onClick={() => setFilters(f => ({ ...f, recommendationStyle: key }))} style={{
+                          display: "flex", alignItems: "center", gap: "12px",
+                          padding: "13px 14px", borderRadius: "12px", border: "1.5px solid",
+                          borderColor: on ? "#c9a96e" : "#e8e8e8",
+                          background: on ? "#f7f0e4" : "#fff",
+                          cursor: "pointer", textAlign: "left", transition: "all 0.1s",
+                        }}>
+                          <div style={{
+                            width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
+                            border: `2px solid ${on ? "#c9a96e" : "#ccc"}`,
+                            background: on ? "#c9a96e" : "#fff", transition: "all 0.1s",
+                          }} />
+                          <span style={{ fontSize: "13px", fontWeight: 500, color: on ? "#c9a96e" : "#444" }}>
+                            {label}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Free text ── */}
+                <div>
+                  <FilterLabel>Describe what you want</FilterLabel>
+                  <textarea
+                    placeholder="e.g. something modest, no heels, I already have a bag, looking for a top only"
+                    value={filters.description}
+                    onChange={(e) => setFilters(f => ({ ...f, description: e.target.value }))}
+                    rows={3}
+                    style={{
+                      width: "100%", padding: "13px 16px", borderRadius: "12px",
+                      border: `1.5px solid ${filters.description ? "#000" : "#e8e8e8"}`,
+                      fontSize: "14px", color: "#000", background: "#fff",
+                      transition: "border-color 0.15s", resize: "none",
+                      fontFamily: "inherit", lineHeight: 1.5,
+                    }}
+                  />
+                </div>
+
+                {count > 0 && (
+                  <button onClick={() => setFilters(DEFAULT_FILTERS)} style={{ alignSelf: "flex-start", fontSize: "12px", color: "#aaa", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: "2px" }}>
+                    Reset filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <button onClick={handleFindMatches} style={{
+            width: "100%", padding: "16px", borderRadius: "16px", border: "none",
+            background: hasInput ? "#000" : "#e8e8e8",
+            color: hasInput ? "#fff" : "#aaa",
+            fontSize: "15px", fontWeight: 600,
+            cursor: hasInput ? "pointer" : "default",
+            letterSpacing: "-0.1px", transition: "background 0.15s, color 0.15s", marginTop: "4px",
+          }}>
+            Find matches
+          </button>
+        </div>
+
+        {/* Recent searches */}
+        <section style={{ marginTop: "44px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+            <h2 style={{ fontSize: "15px", fontWeight: 600, letterSpacing: "-0.2px" }}>Recent searches</h2>
+            {recentSearches.length > 0 && (
+              <button onClick={() => { localStorage.removeItem("nomi_recent_searches"); setRecentSearches([]); }}
+                style={{ fontSize: "12px", color: "#bbb", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                Clear
+              </button>
+            )}
+          </div>
+          {recentSearches.length === 0 ? (
+            <div style={{ borderRadius: "16px", border: "1px solid #ebebeb", padding: "36px 20px", textAlign: "center", background: "#fafafa" }}>
+              <p style={{ fontSize: "13px", color: "#bbb", lineHeight: 1.6 }}>Your recent searches will appear here.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "12px", overflowX: "auto", paddingBottom: "4px", marginLeft: "-20px", marginRight: "-20px", paddingLeft: "20px", paddingRight: "20px" }}>
+              {recentSearches.map((s) => (
+                <button key={s.id} onClick={() => openSearch(s)} style={{ flexShrink: 0, width: "136px", borderRadius: "16px", border: "1px solid #ebebeb", background: "#f7f6f3", cursor: "pointer", padding: 0, overflow: "hidden", textAlign: "left" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={s.image} alt="" style={{ width: "100%", height: "136px", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                  <div style={{ padding: "10px 11px 12px" }}>
+                    <p style={{ fontSize: "11px", fontWeight: 600, color: "#000", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: "3px" }}>
+                      {s.result.analysis.category}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <p style={{ fontSize: "10px", color: "#bbb" }}>{timeAgo(s.searchedAt)}</p>
+                      {s.saved && <span style={{ fontSize: "10px", color: "#c9a96e", fontWeight: 600 }}>★</span>}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+    <NomiNav />
+    </>
+  );
+}
+
+// ─── Price range slider ───────────────────────────────────────────────────────
+
+function PriceRangeSlider({ value, onChange }: {
+  value: [number, number];
+  onChange: (v: [number, number]) => void;
+}) {
+  const [lo, hi] = value;
+  const loPct = (lo / PRICE_MAX) * 100;
+  const hiPct = (hi / PRICE_MAX) * 100;
+
+  return (
+    <div style={{ position: "relative", height: "28px", display: "flex", alignItems: "center" }}>
+      {/* Track */}
+      <div style={{ position: "absolute", left: 0, right: 0, height: "4px", borderRadius: "2px", background: "#ebebeb", pointerEvents: "none" }}>
+        <div style={{
+          position: "absolute",
+          left: `${loPct}%`, width: `${hiPct - loPct}%`,
+          height: "100%", background: "#c9a96e", borderRadius: "2px",
+        }} />
+      </div>
+      {/* Lo thumb */}
+      <input
+        type="range" min={0} max={PRICE_MAX} step={5} value={lo}
+        className="nomi-range"
+        style={{ zIndex: lo >= PRICE_MAX - 20 ? 5 : 3 }}
+        onChange={(e) => onChange([Math.min(Number(e.target.value), hi - 20), hi])}
+      />
+      {/* Hi thumb */}
+      <input
+        type="range" min={0} max={PRICE_MAX} step={5} value={hi}
+        className="nomi-range"
+        style={{ zIndex: 4 }}
+        onChange={(e) => onChange([lo, Math.max(Number(e.target.value), lo + 20)])}
+      />
+    </div>
+  );
+}
+
+// ─── Small components ─────────────────────────────────────────────────────────
+
+function Toggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!value)}
+      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+    >
+      <span style={{ fontSize: "13px", fontWeight: 500, color: "#000" }}>{label}</span>
+      <div style={{ width: "44px", height: "26px", borderRadius: "13px", background: value ? "#c9a96e" : "#d0cdc9", position: "relative", flexShrink: 0, transition: "background 0.2s" }}>
+        <div style={{
+          width: "20px", height: "20px", borderRadius: "50%",
+          background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+          position: "absolute", top: "3px",
+          left: value ? "21px" : "3px",
+          transition: "left 0.2s",
+        }} />
+      </div>
+    </button>
+  );
+}
+
+function FilterLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: "11px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "12px" }}>
+      {children}
+    </p>
+  );
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function CameraIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ color: "#999" }}>
+      <path d="M8.5 4L7 6H4a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 004 18h14a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0018 6h-3l-1.5-2h-5z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <circle cx="11" cy="11.5" r="3" stroke="currentColor" strokeWidth="1.25" />
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <path d="M1.5 3.5h10M3.5 6.5h6M5.5 9.5h2" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChevronDown({ open }: { open: boolean }) {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
+      style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
+      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+  --muted: #6b6b6b;
+  --border: #e8e8e8;
+  --accent: #c9a96e;
+  --accent-light: #f7f0e4;
+  --radius: 16px;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+}
+
+::selection {
+  background: var(--accent-light);
+}
+
+/* ── Dual range slider ─────────────────────────────────────────────────────── */
+.nomi-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+  outline: none;
+}
+.nomi-range::-webkit-slider-runnable-track { background: transparent; }
+.nomi-range::-moz-range-track             { background: transparent; }
+.nomi-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #c9a96e;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+  cursor: grab;
+  pointer-events: all;
+}
+.nomi-range:active::-webkit-slider-thumb { cursor: grabbing; background: #f7f0e4; }
+.nomi-range::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #c9a96e;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+  cursor: grab;
+  pointer-events: all;
+}
+
+@keyframes nomi-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes nomi-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
