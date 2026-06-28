@@ -2,31 +2,39 @@
 
 import { useEffect, useRef, useState } from "react";
 import NomiNav from "../components/NomiNav";
+import ShareToExploreModal, { type CommunityLook } from "../components/ShareToExploreModal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+// Legacy flat item (read-only, for migration)
 type SavedItem = {
-  id: string;
-  name: string;
-  store?: string;
-  price?: string;
-  reason: string;
-  searchUrl?: string;
-  direction?: string;
+  id: string; name: string; store?: string; price?: string;
+  reason: string; searchUrl?: string; direction?: string;
   image?: string;
   attributes?: { color?: string; category?: string; aesthetic?: string };
   savedAt: number;
 };
 
+// Grouped look (current model)
+type LookItem = {
+  id: string; name: string; store?: string; price?: string;
+  reason?: string; searchUrl?: string; direction?: string;
+  image?: string; isOriginal?: boolean;
+  attributes?: { color?: string; category?: string; aesthetic?: string };
+};
+type SavedLook = { id: string; savedAt: number; uploadedImage?: string; items: LookItem[] };
+
 type Board = {
   id: string;
   name: string;
-  itemIds: string[];
+  itemIds: string[];    // legacy
+  lookIds?: string[];   // new
   createdAt: number;
 };
 
-type LongPressTarget = { item: SavedItem; boardId: string };
-type MoveTarget      = { item: SavedItem; fromBoardId: string };
+type LongPressTarget = { look: SavedLook; boardId: string };
+type MoveTarget      = { look: SavedLook; fromBoardId: string };
+type ShareTarget     = { boardName: string; looks: SavedLook[] };
 
 const PLACEHOLDER_COLORS = ["#f0ede8", "#ece9e4", "#e8e4dd", "#ede9e3"];
 
@@ -47,32 +55,72 @@ function useLongPress(cb: () => void, delay = 600) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SavedPage() {
-  const [items,          setItems]         = useState<SavedItem[]>([]);
+  const [looks,          setLooks]         = useState<SavedLook[]>([]);
   const [boards,         setBoards]        = useState<Board[]>([]);
-  const [activeBoardId,  setActiveBoardId] = useState<string | null>(null); // null = boards grid
+  const [activeBoardId,  setActiveBoardId] = useState<string | null>(null);
   const [createOpen,     setCreateOpen]    = useState(false);
   const [newBoardName,   setNewBoardName]  = useState("");
-  const [detailItem,     setDetailItem]    = useState<SavedItem | null>(null);
+  const [detailLook,     setDetailLook]    = useState<SavedLook | null>(null);
   const [longPressTarget, setLP]           = useState<LongPressTarget | null>(null);
   const [moveTarget,     setMoveTarget]    = useState<MoveTarget | null>(null);
+  const [shareTarget,    setShareTarget]   = useState<ShareTarget | null>(null);
+  const [shareConfirmed, setShareConfirmed] = useState(false);
+  const [savedTab,       setSavedTab]       = useState<"boards" | "posts">("boards");
+  const [myPosts,        setMyPosts]        = useState<CommunityLook[]>([]);
 
   function load() {
-    setItems(JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]"));
+    const storedLooks: SavedLook[] = JSON.parse(localStorage.getItem("nomi_saved_looks") ?? "[]");
+
+    // Migration: wrap any legacy flat SavedItems as single-item looks on first load
+    const legacyItems: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
+    if (legacyItems.length > 0 && storedLooks.length === 0) {
+      const migrated: SavedLook[] = legacyItems.map(item => ({
+        id: uid(),
+        savedAt: item.savedAt,
+        uploadedImage: item.image,
+        items: [{
+          id: item.id, name: item.name, store: item.store, price: item.price,
+          reason: item.reason, searchUrl: item.searchUrl, direction: item.direction,
+          image: item.image, isOriginal: false, attributes: item.attributes,
+        }],
+      }));
+      try {
+        localStorage.setItem("nomi_saved_looks", JSON.stringify(migrated));
+      } catch { /* ignore */ }
+      setLooks(migrated);
+    } else {
+      setLooks(storedLooks);
+    }
+
     setBoards(JSON.parse(localStorage.getItem("nomi_boards") ?? "[]"));
   }
-  useEffect(load, []);
+
+  function reloadMyPosts() {
+    const name = localStorage.getItem("nomi_user_name") ?? "";
+    const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
+    setMyPosts(name ? all.filter(l => l.posterName === name) : []);
+  }
+
+  function removePost(id: string) {
+    const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
+    localStorage.setItem("nomi_community_looks", JSON.stringify(all.filter(l => l.id !== id)));
+    setMyPosts(prev => prev.filter(l => l.id !== id));
+  }
+
+  useEffect(() => { load(); reloadMyPosts(); }, []);
 
   // ── Board helpers ────────────────────────────────────────────────────────────
 
-  function boardItems(boardId: string): SavedItem[] {
-    if (boardId === "all") return items;
+  function boardLooks(boardId: string): SavedLook[] {
+    if (boardId === "all") return looks;
     const b = boards.find(b => b.id === boardId);
-    return (b?.itemIds ?? []).map(id => items.find(i => i.id === id)).filter(Boolean) as SavedItem[];
+    const ids = b?.lookIds ?? [];
+    return ids.map(id => looks.find(l => l.id === id)).filter(Boolean) as SavedLook[];
   }
 
   function createBoard() {
     if (!newBoardName.trim()) return;
-    const board: Board = { id: uid(), name: newBoardName.trim(), itemIds: [], createdAt: Date.now() };
+    const board: Board = { id: uid(), name: newBoardName.trim(), itemIds: [], lookIds: [], createdAt: Date.now() };
     const next = [...boards, board];
     localStorage.setItem("nomi_boards", JSON.stringify(next));
     setBoards(next);
@@ -80,26 +128,27 @@ export default function SavedPage() {
     setNewBoardName("");
   }
 
-  function removeItem(item: SavedItem, fromBoardId: string) {
+  function removeLook(look: SavedLook, fromBoardId: string) {
     if (fromBoardId === "all") {
-      // remove from global + all boards
-      const nextItems = items.filter(i => i.id !== item.id);
-      const nextBoards = boards.map(b => ({ ...b, itemIds: b.itemIds.filter(id => id !== item.id) }));
-      localStorage.setItem("nomi_saved_items", JSON.stringify(nextItems));
+      const nextLooks = looks.filter(l => l.id !== look.id);
+      const nextBoards = boards.map(b => ({ ...b, lookIds: (b.lookIds ?? []).filter(id => id !== look.id) }));
+      localStorage.setItem("nomi_saved_looks", JSON.stringify(nextLooks));
       localStorage.setItem("nomi_boards",      JSON.stringify(nextBoards));
-      setItems(nextItems); setBoards(nextBoards);
+      setLooks(nextLooks); setBoards(nextBoards);
     } else {
-      const nextBoards = boards.map(b => b.id === fromBoardId ? { ...b, itemIds: b.itemIds.filter(id => id !== item.id) } : b);
+      const nextBoards = boards.map(b =>
+        b.id === fromBoardId ? { ...b, lookIds: (b.lookIds ?? []).filter(id => id !== look.id) } : b
+      );
       localStorage.setItem("nomi_boards", JSON.stringify(nextBoards));
       setBoards(nextBoards);
     }
-    if (detailItem?.id === item.id) setDetailItem(null);
+    if (detailLook?.id === look.id) setDetailLook(null);
   }
 
   function moveToBoard(target: MoveTarget, toBoardId: string) {
     const nextBoards = boards.map(b => {
-      if (b.id === target.fromBoardId) return { ...b, itemIds: b.itemIds.filter(id => id !== target.item.id) };
-      if (b.id === toBoardId)          return { ...b, itemIds: [target.item.id, ...b.itemIds] };
+      if (b.id === target.fromBoardId) return { ...b, lookIds: (b.lookIds ?? []).filter(id => id !== target.look.id) };
+      if (b.id === toBoardId)          return { ...b, lookIds: [target.look.id, ...(b.lookIds ?? [])] };
       return b;
     });
     localStorage.setItem("nomi_boards", JSON.stringify(nextBoards));
@@ -120,50 +169,90 @@ export default function SavedPage() {
         <div style={{ width: "100%", maxWidth: "420px" }}>
 
           {/* ── Header ── */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "20px 20px 0", position: "sticky", top: 0, background: "#fff", zIndex: 10,
-          }}>
-            {activeBoardId !== null ? (
-              <>
-                <button onClick={() => setActiveBoardId(null)} style={iconBtn}>
-                  <BackArrow />
-                </button>
-                <span style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px" }}>{activeName}</span>
-                <div style={{ width: "32px" }} />
-              </>
-            ) : (
-              <>
-                <span style={{ fontSize: "22px", fontWeight: 600, letterSpacing: "-0.5px" }}>Saved</span>
-                <button onClick={() => setCreateOpen(true)} style={iconBtn}>
-                  <PlusIcon />
-                </button>
-              </>
+          <div style={{ position: "sticky", top: 0, background: "#fff", zIndex: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 0" }}>
+              {activeBoardId !== null ? (
+                <>
+                  <button onClick={() => setActiveBoardId(null)} style={iconBtn}><BackArrow /></button>
+                  <span style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px" }}>{activeName}</span>
+                  <div style={{ width: "32px" }} />
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: "22px", fontWeight: 600, letterSpacing: "-0.5px" }}>Saved</span>
+                  {savedTab === "boards" && (
+                    <button onClick={() => setCreateOpen(true)} style={iconBtn}><PlusIcon /></button>
+                  )}
+                  {savedTab === "posts" && <div style={{ width: "32px" }} />}
+                </>
+              )}
+            </div>
+            {/* Boards / Your posts tabs */}
+            {activeBoardId === null && (
+              <div style={{ display: "flex", gap: "24px", padding: "12px 20px 0" }}>
+                {(["boards", "posts"] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setSavedTab(tab)}
+                    style={{
+                      background: "none", border: "none", padding: "0 0 10px", cursor: "pointer",
+                      fontSize: "14px", fontWeight: savedTab === tab ? 600 : 400,
+                      color: savedTab === tab ? "#000" : "#aaa",
+                      borderBottom: savedTab === tab ? "2px solid #c9a96e" : "2px solid transparent",
+                      transition: "color 0.12s, border-color 0.12s",
+                    }}
+                  >
+                    {tab === "boards" ? "Boards" : "Your posts"}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
 
           {/* ── Boards grid ── */}
-          {activeBoardId === null && (
+          {activeBoardId === null && savedTab === "boards" && (
             <div style={{ padding: "20px" }}>
-              {items.length === 0 && boards.length === 0 ? (
+              {looks.length === 0 && boards.length === 0 ? (
                 <EmptyState />
               ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
-                  {/* All saved (always first) */}
                   <BoardCard
                     name="All saved"
-                    count={items.length}
-                    collageItems={items.slice(0, 4)}
+                    count={looks.length}
+                    collageLooks={looks.slice(0, 4)}
                     onTap={() => setActiveBoardId("all")}
+                    onShare={() => setShareTarget({ boardName: "All saved", looks })}
                   />
-                  {boards.map(board => (
-                    <BoardCard
-                      key={board.id}
-                      name={board.name}
-                      count={board.itemIds.length}
-                      collageItems={boardItems(board.id).slice(0, 4)}
-                      onTap={() => setActiveBoardId(board.id)}
-                    />
+                  {boards.map(board => {
+                    const bl = boardLooks(board.id);
+                    return (
+                      <BoardCard
+                        key={board.id}
+                        name={board.name}
+                        count={bl.length}
+                        collageLooks={bl.slice(0, 4)}
+                        onTap={() => setActiveBoardId(board.id)}
+                        onShare={() => setShareTarget({ boardName: board.name, looks: bl })}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── Your posts ── */}
+          {activeBoardId === null && savedTab === "posts" && (
+            <div style={{ padding: "16px 20px 80px" }}>
+              {myPosts.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "60px", gap: "10px", textAlign: "center" }}>
+                  <p style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.2px" }}>Nothing shared yet.</p>
+                  <p style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.6, maxWidth: "220px" }}>Share a board to Explore and it will appear here.</p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {myPosts.map(look => (
+                    <MyPostCard key={look.id} look={look} onRemove={() => removePost(look.id)} />
                   ))}
                 </div>
               )}
@@ -172,22 +261,21 @@ export default function SavedPage() {
 
           {/* ── Board detail ── */}
           {activeBoardId !== null && (() => {
-            const visibleItems = boardItems(activeBoardId);
+            const visibleLooks = boardLooks(activeBoardId);
             return (
               <div style={{ padding: "16px 20px 0" }}>
-                {visibleItems.length === 0 ? (
+                {visibleLooks.length === 0 ? (
                   <div style={{ textAlign: "center", paddingTop: "60px" }}>
-                    <p style={{ fontSize: "14px", color: "#aaa" }}>No items in this board yet.</p>
+                    <p style={{ fontSize: "14px", color: "#aaa" }}>No looks in this board yet.</p>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    {visibleItems.map(item => (
-                      <ItemCard
-                        key={item.id}
-                        item={item}
-                        boardId={activeBoardId}
-                        onTap={() => setDetailItem(item)}
-                        onLongPress={() => setLP({ item, boardId: activeBoardId })}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    {visibleLooks.map(look => (
+                      <LookCard
+                        key={look.id}
+                        look={look}
+                        onTap={() => setDetailLook(look)}
+                        onLongPress={() => setLP({ look, boardId: activeBoardId })}
                       />
                     ))}
                   </div>
@@ -199,6 +287,35 @@ export default function SavedPage() {
       </div>
 
       <NomiNav />
+
+      {/* ── Share to Explore modal ── */}
+      {shareTarget && (
+        <ShareToExploreModal
+          images={shareTarget.looks
+            .flatMap(l => l.items.map(i => i.image))
+            .filter((img): img is string => !!img)
+            .slice(0, 4)}
+          pieces={shareTarget.looks.flatMap(l =>
+            l.items
+              .filter(i => !i.isOriginal)
+              .map(i => ({ name: i.name, store: i.store, price: i.price, searchUrl: i.searchUrl, category: i.attributes?.category }))
+          )}
+          onClose={() => setShareTarget(null)}
+          onShared={() => {
+            setShareTarget(null);
+            setShareConfirmed(true);
+            reloadMyPosts();
+            setTimeout(() => setShareConfirmed(false), 2500);
+          }}
+        />
+      )}
+
+      {/* ── Share confirmation toast ── */}
+      {shareConfirmed && (
+        <div style={{ position: "fixed", bottom: "90px", left: "50%", transform: "translateX(-50%)", background: "#000", color: "#fff", fontSize: "13px", fontWeight: 500, padding: "10px 20px", borderRadius: "99px", zIndex: 400, whiteSpace: "nowrap", pointerEvents: "none" }}>
+          Shared to Explore.
+        </div>
+      )}
 
       {/* ── Create board modal ── */}
       {createOpen && (
@@ -227,14 +344,15 @@ export default function SavedPage() {
         </div>
       )}
 
-      {/* ── Item detail overlay ── */}
-      {detailItem && (
-        <SavedItemDetail
-          item={detailItem}
-          onClose={() => setDetailItem(null)}
+      {/* ── Look detail overlay ── */}
+      {detailLook && (
+        <LookDetail
+          look={detailLook}
+          onClose={() => setDetailLook(null)}
+          onShare={() => setShareTarget({ boardName: "Saved look", looks: [detailLook] })}
           onRemove={() => {
-            removeItem(detailItem, activeBoardId ?? "all");
-            setDetailItem(null);
+            removeLook(detailLook, activeBoardId ?? "all");
+            setDetailLook(null);
           }}
         />
       )}
@@ -243,16 +361,16 @@ export default function SavedPage() {
       {longPressTarget && (
         <Sheet onClose={() => setLP(null)}>
           <p style={{ fontSize: "13px", fontWeight: 600, color: "#aaa", letterSpacing: "0.5px", textTransform: "uppercase", marginBottom: "8px" }}>
-            {longPressTarget.item.name}
+            {longPressTarget.look.items.find(i => i.isOriginal)?.name ?? "Saved look"}
           </p>
           <ActionRow
             label="Move to another board"
-            onClick={() => { setMoveTarget({ item: longPressTarget.item, fromBoardId: longPressTarget.boardId }); setLP(null); }}
+            onClick={() => { setMoveTarget({ look: longPressTarget.look, fromBoardId: longPressTarget.boardId }); setLP(null); }}
           />
           <ActionRow
-            label={longPressTarget.boardId === "all" ? "Remove item" : "Remove from board"}
+            label={longPressTarget.boardId === "all" ? "Remove look" : "Remove from board"}
             destructive
-            onClick={() => { removeItem(longPressTarget.item, longPressTarget.boardId); setLP(null); }}
+            onClick={() => { removeLook(longPressTarget.look, longPressTarget.boardId); setLP(null); }}
           />
         </Sheet>
       )}
@@ -282,133 +400,175 @@ export default function SavedPage() {
 
 // ─── Board Card ───────────────────────────────────────────────────────────────
 
-function BoardCard({ name, count, collageItems, onTap }: {
+// Collage picks the first image from each look, up to 4 slots
+function lookCollageImages(collageLooks: SavedLook[]): (string | undefined)[] {
+  const images: (string | undefined)[] = [];
+  for (const look of collageLooks.slice(0, 4)) {
+    const img = look.items.find(i => i.image)?.image;
+    images.push(img);
+  }
+  while (images.length < 4) images.push(undefined);
+  return images;
+}
+
+function BoardCard({ name, count, collageLooks, onTap, onShare }: {
   name: string;
   count: number;
-  collageItems: SavedItem[];
+  collageLooks: SavedLook[];
   onTap: () => void;
+  onShare?: () => void;
 }) {
+  const collageImgs = lookCollageImages(collageLooks);
   return (
-    <button onClick={onTap} style={{ borderRadius: "16px", border: "none", background: "#f7f6f3", cursor: "pointer", padding: 0, overflow: "hidden", textAlign: "left" }}>
-      {/* 2×2 collage */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", aspectRatio: "1", overflow: "hidden" }}>
-        {[0,1,2,3].map(i => (
-          <div key={i} style={{ background: PLACEHOLDER_COLORS[i], overflow: "hidden" }}>
-            {collageItems[i]?.image && (
+    <div style={{ borderRadius: "16px", background: "#f7f6f3", overflow: "hidden", textAlign: "left" }}>
+      <div onClick={onTap} style={{ cursor: "pointer" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", aspectRatio: "1", overflow: "hidden" }}>
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{ background: PLACEHOLDER_COLORS[i], overflow: "hidden" }}>
+              {collageImgs[i] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={collageImgs[i]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              )}
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "10px 12px 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
+            <BookmarkSmall />
+            <p style={{ fontSize: "13px", fontWeight: 600, color: "#000", letterSpacing: "-0.1px" }}>{name}</p>
+          </div>
+          <p style={{ fontSize: "11px", color: "#aaa" }}>{count} {count === 1 ? "look" : "looks"}</p>
+        </div>
+      </div>
+      {onShare && count > 0 && (
+        <div style={{ padding: "0 12px 12px" }}>
+          <button
+            onClick={onShare}
+            style={{ width: "100%", padding: "7px 0", borderRadius: "10px", border: "1px solid #e0dbd4", background: "transparent", color: "#aaa", fontSize: "12px", fontWeight: 500, cursor: "pointer" }}
+          >
+            Share to Explore
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Look Card ────────────────────────────────────────────────────────────────
+
+function LookCard({ look, onTap, onLongPress }: {
+  look: SavedLook; onTap: () => void; onLongPress: () => void;
+}) {
+  const lp = useLongPress(onLongPress);
+  const originalItem = look.items.find(i => i.isOriginal);
+  const matchItems   = look.items.filter(i => !i.isOriginal);
+
+  return (
+    <button
+      onPointerDown={lp.onPointerDown} onPointerUp={lp.onPointerUp}
+      onPointerLeave={lp.onPointerLeave} onContextMenu={lp.onContextMenu}
+      onClick={() => { if (lp.didFire()) return; onTap(); }}
+      style={{ width: "100%", border: "1px solid #ebebeb", borderRadius: "16px", background: "#f7f6f3", cursor: "pointer", padding: 0, textAlign: "left", overflow: "hidden" }}
+    >
+      {/* Thumbnail row — all items in the look */}
+      <div style={{ display: "flex", gap: "4px", padding: "12px 12px 8px" }}>
+        {look.items.slice(0, 5).map((item, i) => (
+          <div key={i} style={{ flex: 1, aspectRatio: "1", borderRadius: "8px", overflow: "hidden", background: PLACEHOLDER_COLORS[i % 4] }}>
+            {item.image
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={collageItems[i].image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-            )}
+              ? <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+              : null
+            }
           </div>
         ))}
       </div>
-      {/* Meta */}
-      <div style={{ padding: "10px 12px 12px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "2px" }}>
-          <BookmarkSmall />
-          <p style={{ fontSize: "13px", fontWeight: 600, color: "#000", letterSpacing: "-0.1px" }}>{name}</p>
-        </div>
-        <p style={{ fontSize: "11px", color: "#aaa" }}>{count} {count === 1 ? "item" : "items"}</p>
-      </div>
-    </button>
-  );
-}
-
-// ─── Item Card ────────────────────────────────────────────────────────────────
-
-function ItemCard({ item, boardId, onTap, onLongPress }: {
-  item: SavedItem;
-  boardId: string;
-  onTap: () => void;
-  onLongPress: () => void;
-}) {
-  const lp = useLongPress(onLongPress);
-  return (
-    <button
-      onPointerDown={lp.onPointerDown}
-      onPointerUp={lp.onPointerUp}
-      onPointerLeave={lp.onPointerLeave}
-      onContextMenu={lp.onContextMenu}
-      onClick={() => { if (lp.didFire()) return; onTap(); }}
-      style={{ borderRadius: "16px", border: "none", background: "#f7f6f3", cursor: "pointer", padding: 0, overflow: "hidden", textAlign: "left" }}
-    >
-      {/* Image */}
-      <div style={{ width: "100%", aspectRatio: "1", background: "#ede9e3", overflow: "hidden" }}>
-        {item.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.image} alt={item.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
-        ) : (
-          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <PlaceholderIcon />
-          </div>
-        )}
-      </div>
       {/* Info */}
-      <div style={{ padding: "10px 11px 12px" }}>
-        <p style={{ fontSize: "12px", fontWeight: 600, color: "#000", lineHeight: 1.3, marginBottom: "3px", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-          {item.name}
+      <div style={{ padding: "0 12px 12px" }}>
+        <p style={{ fontSize: "12px", fontWeight: 600, color: "#000", lineHeight: 1.3, marginBottom: "3px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+          {originalItem?.name ?? "Saved look"}
         </p>
-        {item.store && <p style={{ fontSize: "10px", color: "#aaa", marginBottom: "2px" }}>{item.store}</p>}
-        {item.price && <p style={{ fontSize: "11px", fontWeight: 600, color: "#c9a96e" }}>{item.price}</p>}
+        <p style={{ fontSize: "11px", color: "#aaa" }}>
+          {matchItems.length} {matchItems.length === 1 ? "piece" : "pieces"} saved
+          {matchItems[0]?.store ? ` · ${matchItems[0].store}` : ""}
+        </p>
       </div>
     </button>
   );
 }
 
-// ─── Saved Item Detail ────────────────────────────────────────────────────────
+// ─── Look Detail ──────────────────────────────────────────────────────────────
 
-function SavedItemDetail({ item, onClose, onRemove }: {
-  item: SavedItem;
-  onClose: () => void;
-  onRemove: () => void;
+function LookDetail({ look, onClose, onShare, onRemove }: {
+  look: SavedLook; onClose: () => void; onShare: () => void; onRemove: () => void;
 }) {
   const [confirming, setConfirming] = useState(false);
-
-  function handleShop() {
-    const url = item.searchUrl
-      ?? `https://www.google.com/search?tbm=shop&q=${item.name.replace(/\s+/g, "+")}${item.store ? "+" + item.store.replace(/\s+/g, "+") : ""}`;
-    window.open(url, "_blank", "noopener");
-  }
+  const originalItem = look.items.find(i => i.isOriginal);
+  const matchItems   = look.items.filter(i => !i.isOriginal);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 60, display: "flex", flexDirection: "column", alignItems: "center", overflowY: "auto" }}>
       <div style={{ width: "100%", maxWidth: "420px", padding: "0 20px 80px" }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", padding: "20px 0 28px" }}>
+        <div style={{ display: "flex", alignItems: "center", padding: "20px 0 24px" }}>
           <button onClick={onClose} style={iconBtn}><BackArrow /></button>
-          <span style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px", marginLeft: "10px" }}>Saved item</span>
+          <span style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px", marginLeft: "10px" }}>Saved look</span>
         </div>
 
-        {/* Item image */}
-        {item.image && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={item.image} alt={item.name} style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", objectPosition: "top center", borderRadius: "16px", marginBottom: "20px", display: "block" }} />
+        {/* Original piece */}
+        {originalItem && (
+          <div style={{ marginBottom: "20px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "8px" }}>Your piece</p>
+            <div style={{ borderRadius: "14px", overflow: "hidden", background: "#f7f6f3", border: "1px solid #ebebeb" }}>
+              {originalItem.image && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={originalItem.image} alt="" style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+              )}
+              {(originalItem.name || originalItem.store) && (
+                <div style={{ padding: "12px 14px" }}>
+                  <p style={{ fontSize: "14px", fontWeight: 600, color: "#000" }}>{originalItem.name}</p>
+                  {originalItem.store && <p style={{ fontSize: "12px", color: "#aaa", marginTop: "2px" }}>{originalItem.store}</p>}
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
-        {/* Card */}
-        <div style={{ borderRadius: "20px", border: "1px solid #ebebeb", background: "#f7f6f3", padding: "24px", marginBottom: "20px" }}>
-          {(item.store || item.price) && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
-              {item.store && <span style={{ fontSize: "11px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase" }}>{item.store}</span>}
-              {item.price && <span style={{ fontSize: "18px", fontWeight: 700, color: "#c9a96e", letterSpacing: "-0.5px" }}>{item.price}</span>}
+        {/* Matched items */}
+        {matchItems.length > 0 && (
+          <div style={{ marginBottom: "24px" }}>
+            <p style={{ fontSize: "10px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "8px" }}>Saved with this look</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {matchItems.map((item, i) => (
+                <div key={i} style={{ borderRadius: "14px", border: "1px solid #ebebeb", background: "#f7f6f3", padding: "14px 16px", display: "flex", gap: "12px", alignItems: "center" }}>
+                  {item.image && (
+                    <div style={{ width: "52px", height: "52px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, background: "#ede9e3" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: "13px", fontWeight: 600, color: "#000", lineHeight: 1.3, marginBottom: "3px" }}>{item.name}</p>
+                    {item.store && <p style={{ fontSize: "11px", color: "#aaa" }}>{item.store}</p>}
+                    {item.price && <p style={{ fontSize: "12px", fontWeight: 600, color: "#c9a96e", marginTop: "2px" }}>{item.price}</p>}
+                  </div>
+                  {item.searchUrl && (
+                    <a href={item.searchUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: "12px", color: "#c9a96e", fontWeight: 500, textDecoration: "none", flexShrink: 0 }}>
+                      Shop →
+                    </a>
+                  )}
+                </div>
+              ))}
             </div>
-          )}
-          <h1 style={{ fontSize: "20px", fontWeight: 700, letterSpacing: "-0.4px", lineHeight: 1.25, color: "#000", marginBottom: "16px" }}>
-            {item.name}
-          </h1>
-          <div style={{ height: "1px", background: "#e8e4dd", marginBottom: "16px" }} />
-          {item.direction && <p style={{ fontSize: "14px", color: "#444", lineHeight: 1.7, marginBottom: "12px" }}>{item.direction}</p>}
-          <p style={{ fontSize: "14px", color: "#6b6b6b", lineHeight: 1.7, fontStyle: "italic" }}>
-            &ldquo;{item.reason}&rdquo;
-          </p>
-        </div>
+          </div>
+        )}
 
         {/* Actions */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          {(item.searchUrl || item.store) && (
-            <button onClick={handleShop} style={{ width: "100%", padding: "15px", borderRadius: "16px", border: "none", background: "#000", color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-              <SearchIcon /> Shop this look
-            </button>
-          )}
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <button
+            onClick={onShare}
+            style={{ width: "100%", padding: "13px", borderRadius: "16px", border: "none", background: "#c9a96e", color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}
+          >
+            Share to Explore
+          </button>
           {confirming ? (
             <div style={{ display: "flex", gap: "10px" }}>
               <button onClick={() => setConfirming(false)} style={{ flex: 1, padding: "13px", borderRadius: "16px", border: "1.5px solid #e8e8e8", background: "#fff", color: "#444", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>Cancel</button>
@@ -416,10 +576,58 @@ function SavedItemDetail({ item, onClose, onRemove }: {
             </div>
           ) : (
             <button onClick={() => setConfirming(true)} style={{ width: "100%", padding: "13px", borderRadius: "16px", border: "1.5px solid #e8e8e8", background: "#fff", color: "#ef4444", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>
-              Remove item
+              Remove look
             </button>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ─── My Post Card ────────────────────────────────────────────────────────────
+
+function MyPostCard({ look, onRemove }: { look: CommunityLook; onRemove: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const date = new Date(look.sharedAt).toLocaleDateString([], { month: "short", day: "numeric" });
+
+  return (
+    <div style={{ borderRadius: "16px", border: "1px solid #ebebeb", overflow: "hidden" }}>
+      {look.image && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={look.image} alt="" style={{ width: "100%", height: "160px", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+      )}
+      <div style={{ padding: "14px 16px 16px" }}>
+        {look.tags[0] && (
+          <span style={{ display: "inline-block", marginBottom: "8px", fontSize: "11px", color: "#888", border: "1px solid #e0dbd4", padding: "3px 10px", borderRadius: "99px" }}>
+            {look.tags[0]}
+          </span>
+        )}
+        {look.caption && (
+          <p style={{ fontSize: "14px", color: "#000", lineHeight: 1.55, marginBottom: "10px", fontStyle: "italic" }}>
+            &ldquo;{look.caption}&rdquo;
+          </p>
+        )}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <span style={{ fontSize: "12px", color: "#aaa" }}>
+            {look.savedCount === 1 ? "1 save" : `${look.savedCount} saves`}
+          </span>
+          <span style={{ fontSize: "12px", color: "#aaa" }}>{date}</span>
+        </div>
+        {confirming ? (
+          <div style={{ background: "#fff9f9", borderRadius: "12px", padding: "12px" }}>
+            <p style={{ fontSize: "13px", color: "#444", marginBottom: "10px" }}>Remove this look from Explore?</p>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={onRemove} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "none", background: "#ef4444", color: "#fff", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>Remove</button>
+              <button onClick={() => setConfirming(false)} style={{ flex: 1, padding: "10px", borderRadius: "10px", border: "1.5px solid #e8e8e8", background: "#fff", color: "#444", fontSize: "13px", cursor: "pointer" }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => setConfirming(true)} style={{ width: "100%", padding: "10px", borderRadius: "12px", border: "1px solid #e0dbd4", background: "transparent", color: "#aaa", fontSize: "13px", cursor: "pointer" }}>
+            Remove from Explore
+          </button>
+        )}
       </div>
     </div>
   );
@@ -491,10 +699,4 @@ function PlusIcon() {
 }
 function BookmarkSmall() {
   return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 2h7a.5.5 0 01.5.5v9L6 9.5 2 11.5V2.5a.5.5 0 01.5-.5z" fill="#c9a96e" /></svg>;
-}
-function SearchIcon() {
-  return <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" /><path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>;
-}
-function PlaceholderIcon() {
-  return <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="#ccc" strokeWidth="1.5" /><circle cx="8.5" cy="9.5" r="1.5" stroke="#ccc" strokeWidth="1.25" /><path d="M3 16l4.5-4 3 3 2.5-2.5L17 16" stroke="#ccc" strokeWidth="1.25" strokeLinejoin="round" /></svg>;
 }

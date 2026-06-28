@@ -357,23 +357,33 @@ function CommunityCard({ look, height, isSaved, onTap, onSave }: {
   look: CommunityLook; height: number; isSaved: boolean;
   onTap: () => void; onSave: (e: React.MouseEvent) => void;
 }) {
-  const hasImage  = !!look.image;
+  // Prefer the full images array; fall back to legacy single image field
+  const allImages = look.images?.length ? look.images : (look.image ? [look.image] : []);
+  const coverImg  = allImages[0];
+  const extraCount = allImages.length > 1 ? allImages.length - 1 : 0;
   const hashTags  = look.tags.filter(t => t.startsWith("#"));
   const occasion  = look.tags.find(t => OCCASION_SLUG_SET.has(normalizeTag(t)));
   const showInfo  = look.savedCount > 0 || hashTags.length > 0;
 
   return (
     <div onClick={onTap} style={{ borderRadius: "16px", overflow: "hidden", cursor: "pointer", background: "#f7f6f3" }}>
-      <div style={{ height: `${height}px`, position: "relative", background: hasImage ? "#f0ede8" : "linear-gradient(160deg, #ede9e4 0%, #e2ddd7 100%)" }}>
-        {hasImage && (
+      <div style={{ height: `${height}px`, position: "relative", background: coverImg ? "#f0ede8" : "linear-gradient(160deg, #ede9e4 0%, #e2ddd7 100%)" }}>
+        {coverImg && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={look.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+          <img src={coverImg} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
         )}
 
         {/* Popular badge */}
         {look.savedCount >= 10 && (
           <div style={{ position: "absolute", top: "10px", left: "10px", background: "rgba(201,169,110,0.88)", color: "#fff", fontSize: "10px", fontWeight: 600, padding: "3px 9px", borderRadius: "99px", letterSpacing: "0.3px", backdropFilter: "blur(4px)" }}>
             Popular
+          </div>
+        )}
+
+        {/* Multi-image indicator */}
+        {extraCount > 0 && (
+          <div style={{ position: "absolute", top: "10px", left: look.savedCount >= 10 ? "80px" : "10px", background: "rgba(0,0,0,0.55)", color: "#fff", fontSize: "10px", fontWeight: 600, padding: "3px 9px", borderRadius: "99px", letterSpacing: "0.2px", backdropFilter: "blur(4px)" }}>
+            +{extraCount} more
           </div>
         )}
 
@@ -450,7 +460,9 @@ function CommunityDetail({ look, isSaved, onSave, onClose, onTagTap }: {
   onSave: (e: React.MouseEvent) => void; onClose: () => void;
   onTagTap?: (tag: string) => void;
 }) {
-  const hasImage = !!look.image;
+  // Prefer full images array; fall back to legacy single image
+  const allImages = look.images?.length ? look.images : (look.image ? [look.image] : []);
+  const isMulti   = allImages.length > 1;
 
   function shopPiece(piece: CommunityPiece) {
     const q = encodeURIComponent([piece.name, piece.store].filter(Boolean).join(" "));
@@ -461,23 +473,56 @@ function CommunityDetail({ look, isSaved, onSave, onClose, onTagTap }: {
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 60, display: "flex", flexDirection: "column", alignItems: "center", overflowY: "auto" }}>
       <div style={{ width: "100%", maxWidth: "420px", paddingBottom: "80px" }}>
 
-        {/* Hero */}
+        {/* Hero — single image or horizontal scroll strip */}
         <div style={{ position: "relative" }}>
-          <div style={{ width: "100%", height: "380px", background: hasImage ? "#f0ede8" : "linear-gradient(160deg, #ede9e4 0%, #e2ddd7 100%)", overflow: "hidden" }}>
-            {hasImage && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={look.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
-            )}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.0) 50%)" }} />
-          </div>
+          {isMulti ? (
+            /* Horizontal image strip for multi-image looks */
+            <div style={{
+              display: "flex", gap: "6px", overflowX: "auto",
+              padding: "0 0 0 0", scrollbarWidth: "none",
+              scrollSnapType: "x mandatory",
+            } as React.CSSProperties}>
+              {allImages.map((img, i) => (
+                <div key={i} style={{
+                  flexShrink: 0, width: "78vw", maxWidth: "320px", height: "340px",
+                  background: "#f0ede8", overflow: "hidden",
+                  scrollSnapAlign: "start",
+                  borderRadius: i === 0 ? "0 0 0 0" : "0",
+                }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                </div>
+              ))}
+              {/* Padding sentinel so last image can snap flush */}
+              <div style={{ flexShrink: 0, width: "22vw", maxWidth: "100px" }} />
+            </div>
+          ) : (
+            /* Single image — original hero layout */
+            <div style={{ width: "100%", height: "380px", background: allImages[0] ? "#f0ede8" : "linear-gradient(160deg, #ede9e4 0%, #e2ddd7 100%)", overflow: "hidden" }}>
+              {allImages[0] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={allImages[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+              )}
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.0) 50%)" }} />
+            </div>
+          )}
 
-          {/* Floating controls */}
-          <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "20px" }}>
-            <button onClick={onClose} style={floatBtn}><BackArrow /></button>
-            <button onClick={onSave} style={floatBtn}>
+          {/* Floating controls — always on top */}
+          <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", justifyContent: "space-between", padding: "20px", pointerEvents: "none" }}>
+            <button onClick={onClose} style={{ ...floatBtn, pointerEvents: "auto" }}><BackArrow /></button>
+            <button onClick={onSave} style={{ ...floatBtn, pointerEvents: "auto" }}>
               {isSaved ? <BookmarkFillSm /> : <BookmarkOutlineSm />}
             </button>
           </div>
+
+          {/* Dot indicators for multi-image */}
+          {isMulti && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "5px", padding: "8px 0 0" }}>
+              {allImages.map((_, i) => (
+                <div key={i} style={{ width: "5px", height: "5px", borderRadius: "50%", background: i === 0 ? "#000" : "#ddd" }} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Poster info */}
