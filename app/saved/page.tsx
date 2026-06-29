@@ -96,9 +96,9 @@ export default function SavedPage() {
   }
 
   function reloadMyPosts() {
-    const name = localStorage.getItem("nomi_user_name") ?? "";
+    const myIds: string[] = JSON.parse(localStorage.getItem("nomi_my_post_ids") ?? "[]");
     const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
-    setMyPosts(name ? all.filter(l => l.posterName === name) : []);
+    setMyPosts(all.filter(l => myIds.includes(l.id)));
   }
 
   function removePost(id: string) {
@@ -247,7 +247,7 @@ export default function SavedPage() {
               {myPosts.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "60px", gap: "10px", textAlign: "center" }}>
                   <p style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.2px" }}>Nothing shared yet.</p>
-                  <p style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.6, maxWidth: "220px" }}>Share a board to Explore and it will appear here.</p>
+                  <p style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.6, maxWidth: "220px" }}>Share a board or a saved look to Explore and it will appear here.</p>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -460,8 +460,10 @@ function LookCard({ look, onTap, onLongPress }: {
   look: SavedLook; onTap: () => void; onLongPress: () => void;
 }) {
   const lp = useLongPress(onLongPress);
-  const originalItem = look.items.find(i => i.isOriginal);
-  const matchItems   = look.items.filter(i => !i.isOriginal);
+  const originalItem  = look.items.find(i => i.isOriginal);
+  const matchItems    = look.items.filter(i => !i.isOriginal);
+  const matchStores   = [...new Set(matchItems.map(i => i.store).filter(Boolean))] as string[];
+  const storeLabel    = matchStores.length === 1 ? matchStores[0] : null;
 
   return (
     <button
@@ -489,7 +491,7 @@ function LookCard({ look, onTap, onLongPress }: {
         </p>
         <p style={{ fontSize: "11px", color: "#aaa" }}>
           {matchItems.length} {matchItems.length === 1 ? "piece" : "pieces"} saved
-          {matchItems[0]?.store ? ` · ${matchItems[0].store}` : ""}
+          {storeLabel ? ` · ${storeLabel}` : ""}
         </p>
       </div>
     </button>

@@ -122,6 +122,8 @@ export default function ShareToExploreModal({ images, pieces, onClose, onShared 
     try {
       const existing: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
       localStorage.setItem("nomi_community_looks", JSON.stringify([look, ...existing]));
+      const myIds: string[] = JSON.parse(localStorage.getItem("nomi_my_post_ids") ?? "[]");
+      localStorage.setItem("nomi_my_post_ids", JSON.stringify([...myIds, look.id]));
     } catch { /* ignore */ }
     onShared();
   }
