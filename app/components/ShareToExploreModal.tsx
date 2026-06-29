@@ -18,6 +18,7 @@ export type CommunityLook = {
   caption: string;
   image?: string;       // first image — kept for backward compat with existing posts
   images?: string[];    // full set of look images (original + matched items)
+  imageTiers?: ("confident" | "broad")[];  // parallel to images[]; absent index → confident
   pieces: CommunityPiece[];
   tags: string[];
   savedCount: number;
@@ -50,12 +51,13 @@ const COLLAGE_COLORS = ["#f0ede8", "#ece9e4", "#e8e4dd", "#ede9e3"];
 
 type Props = {
   images: (string | undefined)[];
+  tiers?: ("confident" | "broad")[];
   pieces: CommunityPiece[];
   onClose: () => void;
   onShared: () => void;
 };
 
-export default function ShareToExploreModal({ images, pieces, onClose, onShared }: Props) {
+export default function ShareToExploreModal({ images, tiers, pieces, onClose, onShared }: Props) {
   const [caption,     setCaption]     = useState("");
   const [tagInput,    setTagInput]    = useState("");
   const [customTags,  setCustomTags]  = useState<string[]>([]);
@@ -108,15 +110,16 @@ export default function ShareToExploreModal({ images, pieces, onClose, onShared 
     const pendingTags = tagInput.trim() ? [tagInput.trim().startsWith("#") ? tagInput.trim().toLowerCase() : `#${tagInput.trim().toLowerCase()}`] : [];
     const allImages = images.filter((img): img is string => !!img);
     const look: CommunityLook = {
-      id:         Math.random().toString(36).slice(2, 10),
-      posterName: displayName,
-      caption:    caption.trim(),
-      image:      singleImg,       // first image (backward compat)
-      images:     allImages,       // full set
+      id:          Math.random().toString(36).slice(2, 10),
+      posterName:  displayName,
+      caption:     caption.trim(),
+      image:       singleImg,       // first image (backward compat)
+      images:      allImages,       // full set
+      imageTiers:  tiers?.slice(0, allImages.length),
       pieces,
-      tags:       [...customTags, ...pendingTags],
-      savedCount: 0,
-      sharedAt:   Date.now(),
+      tags:        [...customTags, ...pendingTags],
+      savedCount:  0,
+      sharedAt:    Date.now(),
       isAnonymous,
     };
     try {

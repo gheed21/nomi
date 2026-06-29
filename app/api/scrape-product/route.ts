@@ -72,23 +72,136 @@ function resolveImageUrl(url: string, base: string): string {
   try { return new URL(url, base).href; } catch { return url; }
 }
 
+// ─── Bot-block detection ──────────────────────────────────────────────────────
+
+// Only user-facing block messages — NOT vendor script names (perimeterx, datadome,
+// cloudflare, akamai etc.) since those appear in every page from sites using those
+// services, even when the content loads successfully. False-positiving on vendor names
+// was blocking ASOS product pages that had loaded completely.
+const BLOCK_SIGNALS = [
+  "access denied",
+  "you have been blocked",
+  "please verify you are human",
+  "prove you are human",
+  "403 forbidden",
+  "enable javascript and cookies to continue",
+  "checking your browser before accessing",
+  "ray id",           // Cloudflare challenge page signature
+  "please complete the security check",
+];
+
+function isBlockedPage(html: string, status: number): boolean {
+  if (status === 403 || status === 429 || status === 503) return true;
+  // A full product page is always large. If we got > 100KB back with a 200,
+  // it's not a block page — don't scan vendor script names that appear in real content.
+  if (status === 200 && html.length > 100_000) return false;
+  const lower = html.toLowerCase();
+  return BLOCK_SIGNALS.some(s => lower.includes(s));
+}
+
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  let targetUrl = "";
   try {
     const { url } = await req.json() as { url: string };
-    if (!url) return NextResponse.json({ success: false });
+    targetUrl = url;
+    if (!url) { console.error("[scrape] no URL provided"); return NextResponse.json({ success: false }); }
 
-    // Fetch rendered HTML via ScrapingBee
+    console.log(`[scrape] ── START ── url: ${url}`);
+    console.log(`[scrape] BEE_KEY present: ${!!BEE_KEY} length: ${BEE_KEY.length}`);
+
+    // ── Fetch rendered HTML via ScrapingBee ───────────────────────────────────
     const bee = new ScrapingBeeClient(BEE_KEY);
-    const beeRes = await bee.get({ url, params: { render_js: true } });
+    let beeRes: Awaited<ReturnType<typeof bee.get>>;
+    try {
+      beeRes = await bee.get({ url, params: { render_js: true, premium_proxy: true, country_code: "us" } });
+    } catch (beeErr: unknown) {
+      const e = beeErr as { response?: { status?: number; data?: unknown }; message?: string; code?: string };
+      const errStatus = e.response?.status ?? "no-status";
+      const errBody   = e.response?.data != null
+        ? Buffer.isBuffer(e.response.data)
+          ? e.response.data.toString("utf-8").slice(0, 500)
+          : String(e.response.data).slice(0, 500)
+        : "no-body";
+      console.error(`[scrape] ScrapingBee threw — status:${errStatus} code:${e.code ?? "n/a"} message:"${e.message ?? "n/a"}" body:"${errBody}"`);
+      return NextResponse.json({ success: false, blocked: false });
+    }
+
+    const beeStatus: number = (beeRes as { status?: number }).status ?? 200;
+    // ScrapingBee passes the target site's original status in a header
+    const beeHeaders = (beeRes as { headers?: Record<string, string> }).headers ?? {};
+    const originalStatus = beeHeaders["spb-initial-status-code"] ?? beeHeaders["x-status-code"] ?? "unknown";
+    const creditsUsed    = beeHeaders["spb-cost"] ?? "unknown";
+    const resolvedUrl    = beeHeaders["spb-resolved-url"] ?? "unknown";
     const html = beeRes.data.toString("utf-8");
+
+    console.log(`[scrape] ScrapingBee HTTP status: ${beeStatus}`);
+    console.log(`[scrape] Target original status: ${originalStatus}  Credits used: ${creditsUsed}`);
+    console.log(`[scrape] Resolved URL: ${resolvedUrl}`);
+    console.log(`[scrape] Response body length: ${html.length} chars`);
+    console.log(`[scrape] Body first 500 chars: "${html.slice(0, 500).replace(/\n/g, " ")}"`);
+
+    if (beeStatus === 401 || beeStatus === 402) {
+      console.error(`[scrape] ScrapingBee API key issue — status: ${beeStatus}. Check account credits or key validity.`);
+      return NextResponse.json({ success: false, blocked: false });
+    }
+    if (beeStatus === 429) {
+      console.error(`[scrape] ScrapingBee rate-limited — status: 429.`);
+      return NextResponse.json({ success: false, blocked: false });
+    }
+
+    if (isBlockedPage(html, beeStatus)) {
+      console.error(`[scrape] bot-blocked — status:${beeStatus} url:${url} html_snippet:"${html.slice(0, 200)}"`);
+      return NextResponse.json({ success: false, blocked: true });
+    }
 
     // ── 1. OpenGraph extraction ───────────────────────────────────────────────
     let name  = extractMeta(html, "og:title");
     let image = extractMeta(html, "og:image");
     let price = extractMeta(html, "product:price:amount") || extractMeta(html, "og:price:amount");
     let store = extractMeta(html, "og:site_name");
+    console.log(`[scrape] OG → name:"${name}" image:"${image?.slice(0,60)}" price:"${price}" store:"${store}"`);
+
+    // ── 1b. Shopify product JSON — 0 credits, returns product_type + cleaner image ─
+    // og:image on Shopify is the featured/hero image, which for lifestyle brands is
+    // often an editorial shot showing a full outfit rather than the isolated product.
+    // images[1] from the product JSON is typically a secondary angle that shows the
+    // product alone. product_type ("Women:Bottoms:Leggings") is used as textual context
+    // for the vision model so it can correct for bad image selection.
+    let productType = "";
+    // Detect Shopify by page URL path (/products/ is Shopify-specific) or CDN hostname.
+    // Custom-domain Shopify stores (e.g. aloyoga.com) serve og:image from their own domain
+    // with the path cdn/shop/files — not from cdn.shopify.com — so check both signals.
+    const isShopify = url.includes("/products/") &&
+      (image.includes("cdn.shopify.com") || image.includes("cdn/shop/files") || image.includes("shopify"));
+    if (isShopify) {
+      try {
+        const urlObj    = new URL(url);
+        const hMatch    = urlObj.pathname.match(/\/products\/([^/?#]+)/);
+        if (hMatch) {
+          const jsonUrl = `${urlObj.origin}/products/${hMatch[1]}.json`;
+          console.log(`[scrape] Shopify JSON → ${jsonUrl.slice(0, 80)}`);
+          const jr = await fetch(jsonUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (compatible; Nomi/1.0)" },
+            signal:  AbortSignal.timeout(4000),
+          });
+          if (jr.ok) {
+            const pd = await jr.json() as { product?: { product_type?: string; images?: { src: string }[] } };
+            const prod = pd.product;
+            productType = prod?.product_type ?? "";
+            if (prod?.images && prod.images.length >= 2) {
+              image = prod.images[1].src;   // secondary angle — product-isolated
+              console.log(`[scrape] Shopify JSON → type:"${productType}" images[1]:"${image.slice(0, 80)}"`);
+            } else {
+              console.log(`[scrape] Shopify JSON → type:"${productType}" (only 1 image, keeping og:image)`);
+            }
+          }
+        }
+      } catch (se: unknown) {
+        console.warn(`[scrape] Shopify JSON fetch failed: ${se instanceof Error ? se.message : String(se)}`);
+      }
+    }
 
     // ── 2. Store-specific fallbacks ───────────────────────────────────────────
     const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } })();
@@ -114,33 +227,70 @@ export async function POST(req: NextRequest) {
 
     // Strip " | StoreName" or " - StoreName" suffixes OG titles often include
     if (name) name = name.split(/\s+[|–\-]\s+/)[0].trim();
+    console.log(`[scrape] after fallbacks → name:"${name}" price:"${price}" store:"${store}"`);
 
-    if (!name && !image) return NextResponse.json({ success: false });
+    if (!name && !image) {
+      console.error(`[scrape] no name or image found after parsing — possible partial block or unsupported page structure. html_snippet:"${html.slice(0, 200)}"`);
+      return NextResponse.json({ success: false, blocked: false });
+    }
 
     // ── 4. Resolve and fetch image ────────────────────────────────────────────
     const imageUrl = resolveImageUrl(image, url);
-    if (!imageUrl) return NextResponse.json({ success: false });
+    if (!imageUrl) { console.error("[scrape] could not resolve image URL"); return NextResponse.json({ success: false }); }
+    console.log(`[scrape] fetching image: ${imageUrl.slice(0, 80)}`);
 
     const imgRes = await fetch(imageUrl, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; Nomi/1.0)" },
+      redirect: "follow",
     });
-    if (!imgRes.ok) return NextResponse.json({ success: false });
+    if (!imgRes.ok) {
+      console.error(`[scrape] image fetch failed: ${imgRes.status} ${imgRes.statusText}`);
+      return NextResponse.json({ success: false });
+    }
 
-    const contentType = imgRes.headers.get("content-type") ?? "image/jpeg";
     const buffer = await imgRes.arrayBuffer();
-    if (buffer.byteLength > 4 * 1024 * 1024) return NextResponse.json({ success: false });
+    console.log(`[scrape] image buffer size: ${buffer.byteLength} bytes`);
+    if (buffer.byteLength > 4 * 1024 * 1024) {
+      console.error("[scrape] image too large (> 4MB)");
+      return NextResponse.json({ success: false });
+    }
 
-    const imageData = `data:${contentType};base64,${Buffer.from(buffer).toString("base64")}`;
+    // Normalize content-type and validate it's actually an image
+    const rawCT = (imgRes.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    const VALID = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    let mimeType = VALID.includes(rawCT) ? rawCT : "";
+    console.log(`[scrape] image content-type: "${rawCT}" → mimeType: "${mimeType}"`);
+
+    // Detect from magic bytes when content-type is missing or generic (e.g. CDN returns HTML)
+    if (!mimeType) {
+      const b = new Uint8Array(buffer.slice(0, 12));
+      if      (b[0] === 0xFF && b[1] === 0xD8)                         mimeType = "image/jpeg";
+      else if (b[0] === 0x89 && b[1] === 0x50)                         mimeType = "image/png";
+      else if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57 && b[9] === 0x45) mimeType = "image/webp";
+      else if (b[0] === 0x47 && b[1] === 0x49)                         mimeType = "image/gif";
+      console.log(`[scrape] magic-byte detection → mimeType: "${mimeType}"`);
+    }
+
+    if (!mimeType) {
+      console.error("[scrape] image is not a valid image type (possibly HTML/bot-block response)");
+      return NextResponse.json({ success: false });
+    }
+
+    const imageData = `data:${mimeType};base64,${Buffer.from(buffer).toString("base64")}`;
+    console.log(`[scrape] success — name:"${name}" store:"${store}" price:"${price}" imageDataLen:${imageData.length}`);
 
     return NextResponse.json({
-      success: true,
-      name:  name  || "Product",
-      image: imageData,
-      price: cleanPrice(price),
-      store: store  || host.replace("www.", ""),
+      success:     true,
+      name:        name  || "Product",
+      image:       imageData,
+      price:       cleanPrice(price),
+      store:       store  || host.replace("www.", ""),
+      productType: productType || undefined,
     });
-  } catch (err) {
-    console.error("Scrape error:", err);
+  } catch (err: unknown) {
+    const e = err as { message?: string; stack?: string; code?: string; response?: { status?: number } };
+    console.error(`[scrape] unhandled error for "${targetUrl}" — message:"${e.message ?? "n/a"}" code:"${e.code ?? "n/a"}" httpStatus:${e.response?.status ?? "n/a"}`);
+    if (e.stack) console.error(`[scrape] stack: ${e.stack.split("\n").slice(0, 4).join(" | ")}`);
     return NextResponse.json({ success: false });
   }
 }

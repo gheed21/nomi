@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import NomiNav from "../components/NomiNav";
 import ShareToExploreModal, { type CommunityLook } from "../components/ShareToExploreModal";
+import ItemThumbnail from "../components/ItemThumbnail";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ type LookItem = {
   id: string; name: string; store?: string; price?: string;
   reason?: string; searchUrl?: string; direction?: string;
   image?: string; isOriginal?: boolean;
+  imageTier?: "confident" | "broad";
   attributes?: { color?: string; category?: string; aesthetic?: string };
 };
 type SavedLook = { id: string; savedAt: number; uploadedImage?: string; items: LookItem[] };
@@ -289,12 +291,12 @@ export default function SavedPage() {
       <NomiNav />
 
       {/* ── Share to Explore modal ── */}
-      {shareTarget && (
+      {shareTarget && (() => {
+        const itemsWithImages = shareTarget.looks.flatMap(l => l.items).filter(i => !!i.image).slice(0, 4);
+        return (
         <ShareToExploreModal
-          images={shareTarget.looks
-            .flatMap(l => l.items.map(i => i.image))
-            .filter((img): img is string => !!img)
-            .slice(0, 4)}
+          images={itemsWithImages.map(i => i.image as string)}
+          tiers={itemsWithImages.map(i => i.imageTier ?? "confident")}
           pieces={shareTarget.looks.flatMap(l =>
             l.items
               .filter(i => !i.isOriginal)
@@ -308,7 +310,8 @@ export default function SavedPage() {
             setTimeout(() => setShareConfirmed(false), 2500);
           }}
         />
-      )}
+        );
+      })()}
 
       {/* ── Share confirmation toast ── */}
       {shareConfirmed && (
@@ -476,11 +479,7 @@ function LookCard({ look, onTap, onLongPress }: {
       <div style={{ display: "flex", gap: "4px", padding: "12px 12px 8px" }}>
         {look.items.slice(0, 5).map((item, i) => (
           <div key={i} style={{ flex: 1, aspectRatio: "1", borderRadius: "8px", overflow: "hidden", background: PLACEHOLDER_COLORS[i % 4] }}>
-            {item.image
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
-              : null
-            }
+            <ItemThumbnail src={item.image} imageTier={item.imageTier} />
           </div>
         ))}
       </div>
@@ -543,8 +542,7 @@ function LookDetail({ look, onClose, onShare, onRemove }: {
                 <div key={i} style={{ borderRadius: "14px", border: "1px solid #ebebeb", background: "#f7f6f3", padding: "14px 16px", display: "flex", gap: "12px", alignItems: "center" }}>
                   {item.image && (
                     <div style={{ width: "52px", height: "52px", borderRadius: "10px", overflow: "hidden", flexShrink: 0, background: "#ede9e3" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={item.image} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+                      <ItemThumbnail src={item.image} imageTier={item.imageTier} />
                     </div>
                   )}
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -592,13 +590,20 @@ function LookDetail({ look, onClose, onShare, onRemove }: {
 
 function MyPostCard({ look, onRemove }: { look: CommunityLook; onRemove: () => void }) {
   const [confirming, setConfirming] = useState(false);
-  const date = new Date(look.sharedAt).toLocaleDateString([], { month: "short", day: "numeric" });
+  const date      = new Date(look.sharedAt).toLocaleDateString([], { month: "short", day: "numeric" });
+  const allImages = look.images?.length ? look.images : (look.image ? [look.image] : []);
+  const slots     = allImages.slice(0, 4);
 
   return (
     <div style={{ borderRadius: "16px", border: "1px solid #ebebeb", overflow: "hidden" }}>
-      {look.image && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={look.image} alt="" style={{ width: "100%", height: "160px", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+      {slots.length > 0 && (
+        <div style={{ display: "flex", gap: "4px", padding: "12px 12px 8px" }}>
+          {slots.map((img, i) => (
+            <div key={i} style={{ flex: 1, aspectRatio: "1", borderRadius: "8px", overflow: "hidden", background: PLACEHOLDER_COLORS[i % 4] }}>
+              <ItemThumbnail src={img} imageTier={look.imageTiers?.[i]} />
+            </div>
+          ))}
+        </div>
       )}
       <div style={{ padding: "14px 16px 16px" }}>
         {look.tags[0] && (

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import NomiNav from "../components/NomiNav";
 import ShareToExploreModal from "../components/ShareToExploreModal";
+import ItemThumbnail from "../components/ItemThumbnail";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -360,6 +361,7 @@ type LookItem = {
   id: string; name: string; store?: string; price?: string;
   reason?: string; searchUrl?: string; direction?: string;
   image?: string; isOriginal?: boolean;
+  imageTier?: "confident" | "broad";
   attributes?: { color?: string; category?: string; aesthetic?: string };
 };
 type SavedLook = { id: string; savedAt: number; uploadedImage?: string; items: LookItem[] };
@@ -382,7 +384,7 @@ export default function ResultsPage() {
   const [selectedMatch,   setSelectedMatch]   = useState<Match | null>(null);
   const [savedMatchNames, setSavedMatchNames] = useState<Set<string>>(new Set());
   const [textPiece,       setTextPiece]       = useState<{ name: string; category: string; description: string } | null>(null);
-  const [scrapedProduct,  setScrapedProduct]  = useState<{ name: string; price: string; store: string } | null>(null);
+  const [scrapedProduct,  setScrapedProduct]  = useState<{ name: string; price: string; store: string; productType?: string } | null>(null);
   const [shareOpen,       setShareOpen]       = useState(false);
   const [shareConfirmed,  setShareConfirmed]  = useState(false);
   const [confirmReset,    setConfirmReset]    = useState(false);
@@ -401,8 +403,11 @@ export default function ResultsPage() {
 
     // Scraped product metadata (cleared after reading to avoid stale state)
     const scraped = localStorage.getItem("nomi_scraped_product");
-    if (scraped) {
-      setScrapedProduct(JSON.parse(scraped));
+    const scrapedData = scraped
+      ? JSON.parse(scraped) as { name: string; price: string; store: string; productType?: string }
+      : null;
+    if (scrapedData) {
+      setScrapedProduct(scrapedData);
       localStorage.removeItem("nomi_scraped_product");
     }
 
@@ -465,7 +470,12 @@ export default function ResultsPage() {
       fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: stored, filters, tasteProfile, feedbackSignals, mode: currentMode, scope: currentScope, retryForCategory }),
+        body: JSON.stringify({
+          image: stored, filters, tasteProfile, feedbackSignals,
+          mode: currentMode, scope: currentScope, retryForCategory,
+          productName: scrapedData?.name,
+          productType: scrapedData?.productType,
+        }),
       }).then(r => r.json());
 
     function finaliseResult(result: Result, mismatch: string | null) {
@@ -562,6 +572,7 @@ export default function ResultsPage() {
         id: uid(), name: m.name, store: m.store, price: m.price,
         reason: m.reason, searchUrl: m.searchUrl, direction: m.direction,
         image: m.image ?? undefined,
+        imageTier: m.imageTier ?? undefined,
         attributes: { category: m.category, color: result.analysis.color, aesthetic: result.analysis.aesthetic },
       });
     }
@@ -612,7 +623,11 @@ export default function ResultsPage() {
       fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image, filters, tasteProfile, feedbackSignals, mode, scope: currentScope, excludeNames }),
+        body: JSON.stringify({
+          image, filters, tasteProfile, feedbackSignals, mode, scope: currentScope, excludeNames,
+          productName: scrapedProduct?.name,
+          productType: scrapedProduct?.productType,
+        }),
       }).then(r => r.json() as Promise<Result & { error?: string }>);
 
     try {
@@ -1160,6 +1175,7 @@ function SaveToSheet({ match, searchImage, analysis, originalMeta, onSaved, onCl
         id: uid(), name: match.name, store: match.store, price: match.price,
         reason: match.reason, searchUrl: match.searchUrl, direction: match.direction,
         image: match.image ?? undefined,
+        imageTier: match.imageTier ?? undefined,
         attributes: { category: match.category, color: analysis?.color, aesthetic: analysis?.aesthetic },
       },
     ];
@@ -1375,24 +1391,6 @@ function CategoryIcon({ category }: { category: string }) {
 
 // Shows a real product image when available; falls back to category icon on error or absence.
 // Own state per instance so a broken image for card 2 doesn't affect cards 1 or 3.
-function MatchImageOrIcon({ src, category }: { src: string; category: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-        <CategoryIcon category={category} />
-      </div>
-    );
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src} alt=""
-      onError={() => setFailed(true)}
-      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block", borderRadius: "14px" }}
-    />
-  );
-}
 
 function StyleItWithCarousel({ image, matches, analysis }: {
   image: string;
@@ -1455,14 +1453,7 @@ function StyleItWithCarousel({ image, matches, analysis }: {
                 border: `1px solid ${hasImage ? "#e0dbd4" : "#ecddc8"}`,
                 overflow: "hidden", position: "relative",
               }}>
-                {hasImage
-                  ? <MatchImageOrIcon src={match.image!} category={cat} />
-                  : (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%" }}>
-                      <CategoryIcon category={cat} />
-                    </div>
-                  )
-                }
+                <ItemThumbnail src={match.image ?? undefined} imageTier={match.imageTier} fallback={<CategoryIcon category={cat} />} />
                 <div style={{
                   position: "absolute", top: "6px", right: "6px",
                   width: "18px", height: "18px", borderRadius: "5px",
@@ -1471,11 +1462,6 @@ function StyleItWithCarousel({ image, matches, analysis }: {
                 }}>
                   <span style={{ fontSize: "10px", fontWeight: 700, color: "#fff", lineHeight: 1 }}>{i + 1}</span>
                 </div>
-                {match.imageTier === "broad" && (
-                  <div style={{ position: "absolute", bottom: "5px", left: "5px", background: "rgba(0,0,0,0.5)", borderRadius: "4px", padding: "2px 5px" }}>
-                    <span style={{ fontSize: "9px", fontWeight: 600, color: "#fff", letterSpacing: "0.3px" }}>similar</span>
-                  </div>
-                )}
               </div>
               {/* Text */}
               <div style={{ marginTop: "6px" }}>
