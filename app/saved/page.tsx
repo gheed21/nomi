@@ -69,6 +69,8 @@ export default function SavedPage() {
   const [shareConfirmed, setShareConfirmed] = useState(false);
   const [savedTab,       setSavedTab]       = useState<"boards" | "posts">("boards");
   const [myPosts,        setMyPosts]        = useState<CommunityLook[]>([]);
+  const [editingName,    setEditingName]    = useState(false);
+  const [draftName,      setDraftName]      = useState("");
 
   function load() {
     const storedLooks: SavedLook[] = JSON.parse(localStorage.getItem("nomi_saved_looks") ?? "[]");
@@ -163,6 +165,26 @@ export default function SavedPage() {
   const activeName = activeBoardId === "all" ? "All saved"
     : boards.find(b => b.id === activeBoardId)?.name ?? "";
 
+  function startRename() {
+    setDraftName(activeName);
+    setEditingName(true);
+  }
+
+  function commitRename() {
+    const trimmed = draftName.trim();
+    if (trimmed && trimmed !== activeName) {
+      const next = boards.map(b => b.id === activeBoardId ? { ...b, name: trimmed } : b);
+      setBoards(next);
+      localStorage.setItem("nomi_boards", JSON.stringify(next));
+    }
+    setEditingName(false);
+  }
+
+  function cancelRename() {
+    setEditingName(false);
+    setDraftName("");
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
@@ -175,8 +197,36 @@ export default function SavedPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 20px 0" }}>
               {activeBoardId !== null ? (
                 <>
-                  <button onClick={() => setActiveBoardId(null)} style={iconBtn}><BackArrow /></button>
-                  <span style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px" }}>{activeName}</span>
+                  <button onClick={() => { setActiveBoardId(null); setEditingName(false); }} style={iconBtn}><BackArrow /></button>
+                  {editingName ? (
+                    <input
+                      autoFocus
+                      value={draftName}
+                      onChange={e => setDraftName(e.target.value)}
+                      onBlur={commitRename}
+                      onKeyDown={e => {
+                        if (e.key === "Enter") { e.currentTarget.blur(); }
+                        if (e.key === "Escape") cancelRename();
+                      }}
+                      style={{
+                        fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px",
+                        border: "none", borderBottom: "1.5px solid #c9a96e",
+                        outline: "none", background: "transparent", textAlign: "center",
+                        width: "180px", padding: "0 4px", color: "#000",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      onClick={activeBoardId === "all" ? undefined : startRename}
+                      style={{
+                        fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px",
+                        cursor: activeBoardId === "all" ? "default" : "text",
+                        borderBottom: activeBoardId === "all" ? "none" : "1px dashed transparent",
+                      }}
+                    >
+                      {activeName}
+                    </span>
+                  )}
                   <div style={{ width: "32px" }} />
                 </>
               ) : (
