@@ -201,6 +201,7 @@ type Filters = {
   secondhandOnly?:      boolean;
   recommendationStyle?: "specific" | "direction";
   description?:         string;
+  gender?:              string;     // "Women's" | "Men's" | "Kids" | "Unisex" | ""
 };
 
 type TasteProfile = {
@@ -480,6 +481,14 @@ function detectExclusiveConstraint(filters?: Filters): string {
   return "";
 }
 
+// Per-request gender filter — overrides the global tasteProfile.gender from onboarding.
+// Injected after tasteSection so it supersedes any earlier gender instruction in the prompt.
+function buildGenderSection(filters?: Filters): string {
+  const g = filters?.gender?.trim();
+  if (!g || g === "All") return "";
+  return `\nDEPARTMENT (overrides any earlier gender instruction): Suggest only items from the ${g} section. Every recommended piece — all 3 — must be marketed to ${g} shoppers. Do not suggest items from men's, women's, or kids' sections that don't match this.\n`;
+}
+
 function buildSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | null, feedbackSignals?: FeedbackStore | null): string {
   const isDirection = filters?.recommendationStyle === "direction";
 
@@ -551,13 +560,14 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
     : "";
 
   const tasteSection        = buildTasteSection(tasteProfile);
+  const genderSection       = buildGenderSection(filters);
   const feedbackSection     = buildFeedbackSection(feedbackSignals);
   const glossarySection     = buildCategoryGlossary(filters);
   const colorGlossarySection = buildColorGlossary(filters);
 
   if (isDirection) {
     return `${mandatorySection}${exclusiveConstraint}You are Nomi, an expert fashion stylist. Analyze the clothing item in the image and identify its key style attributes: color, category, silhouette, fabric feel, and overall aesthetic. Then suggest exactly 3 complementary style directions that would complete an outfit with this item.
-${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${feedbackSection}
+${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 Return style guidance and aesthetic direction — NOT specific product names, brands, or store names. For each suggestion provide:
 
@@ -577,9 +587,10 @@ For the analysis object describing the UPLOADED piece:
 - analysis.color: a short color word only — e.g. "white", "navy", "camel". Not a sentence.
 - analysis.category: a short garment type only — e.g. "dress", "blouse", "jeans". Not a sentence.
 - analysis.aesthetic: the one place for a full evocative sentence about the overall style vibe.
+- analysis.detectedBrand: the brand or store name if it is clearly visible on a label, tag, or logo in the image. Return null if not visible or uncertain.
 
 Return JSON only, no markdown:
-{ "analysis": { "color": string, "category": string, "aesthetic": string }, "matches": [ { "name": string, "direction": string, "reason": string, "price": string, "searchUrl": string, "category": string } ] }`;
+{ "analysis": { "color": string, "category": string, "aesthetic": string, "detectedBrand": string | null }, "matches": [ { "name": string, "direction": string, "reason": string, "price": string, "searchUrl": string, "category": string } ] }`;
   }
 
   return `${mandatorySection}${exclusiveConstraint}You are Nomi, an expert fashion stylist. Analyze the clothing item in the image and identify its key style attributes: color, category, silhouette, fabric feel, and overall aesthetic. Then suggest exactly 3 complementary pieces that would complete an outfit with this item.
@@ -588,7 +599,7 @@ Store selection rules:
 - Only suggest stores that genuinely carry that item type at the stated price range. Never suggest luxury brands (Louis Vuitton, Gucci, Prada, Bottega) for items under $150.
 - Price tier mapping: $0–$60 → ASOS, Zara, H&M, Urban Outfitters, Mango, PrettyLittleThing, Princess Polly; $60–$150 → Anthropologie, Free People, Revolve, Nordstrom, Madewell, Reformation; $150–$400 → Saks, Bloomingdales, AllSaints, ba&sh, Veronica Beard; $400+ → Net-a-Porter, Matches, luxury department stores.
 - Be specific: use the actual product line or style name when possible (e.g. "Levi's 501 Original" not "jeans").
-${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${feedbackSection}
+${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, a Google Shopping search URL, and a category field.
 
@@ -597,11 +608,12 @@ searchUrl format: https://www.google.com/search?tbm=shop&q=item+name+store+name 
 category must be exactly one of: top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — choose the one that best describes the suggested item.
 
 Return JSON only, no markdown:
-{ "analysis": { "color": string, "category": string, "aesthetic": string }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "searchUrl": string, "category": string } ] }`;
+{ "analysis": { "color": string, "category": string, "aesthetic": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "searchUrl": string, "category": string } ] }`;
 }
 
 function buildSimilarStylesPrompt(filters?: Filters, tasteProfile?: TasteProfile | null, feedbackSignals?: FeedbackStore | null, scope?: "same" | "any"): string {
   const tasteSection         = buildTasteSection(tasteProfile);
+  const genderSection        = buildGenderSection(filters);
   const feedbackSection      = buildFeedbackSection(feedbackSignals);
   const glossarySection      = buildCategoryGlossary(filters);
   const colorGlossarySection = buildColorGlossary(filters);
@@ -668,12 +680,12 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
       : "Suggest exactly 3 items from DIFFERENT garment categories than the uploaded piece. First identify what type of item was uploaded (e.g. top, dress, shoes), then suggest complementary pieces from other categories — such as bottoms, shoes, bags, outerwear, or accessories — that share the same aesthetic, color story, and design details. Do NOT suggest another item of the same type as the uploaded piece. Explain how each suggested piece connects to the style of the uploaded item.";
 
   return `${mandatorySection}${criticalConstraint}${exclusiveConstraint}You are Nomi, an expert fashion stylist. Analyze the clothing item in the image and identify its key style attributes: silhouette, neckline, cut, fabric, color, and overall aesthetic. ${scopeInstruction}
-${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${secondhandSection}${descSection}${tasteSection}${feedbackSection}
+${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each match also include a category field: exactly one of top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — describing the type of item suggested.
 
 Return JSON only in this format:
-{ "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
+{ "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
 }
 
 function buildTextSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | null, feedbackSignals?: FeedbackStore | null): string {
@@ -709,6 +721,7 @@ function buildTextSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | 
     ? "\nPrioritize secondhand and resale platforms like Depop, Vinted, Poshmark, ThredUp. Use new retail as a fallback only if no secondhand option fits." : "";
 
   const tasteSection    = buildTasteSection(tasteProfile);
+  const genderSection   = buildGenderSection(filters);
   const feedbackSection = buildFeedbackSection(feedbackSignals);
 
   return `You are Nomi, an expert fashion stylist. Based on the item description provided, suggest exactly 3 complementary pieces that complete an outfit with it.
@@ -717,17 +730,17 @@ Store selection rules:
 - Only suggest stores that genuinely carry that item type at the stated price range.
 - Price tier mapping: $0–$60 → ASOS, Zara, H&M, Urban Outfitters, Mango; $60–$150 → Anthropologie, Free People, Revolve, Nordstrom, Madewell, Reformation; $150–$400 → Saks, Bloomingdales, AllSaints, ba&sh; $400+ → Net-a-Porter, Matches.
 - Be specific: use actual product line or style names when possible.
-${colorSection}${budgetSection}${categorySection}${secondhandSection}${tasteSection}${feedbackSection}
+${colorSection}${budgetSection}${categorySection}${secondhandSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, and a Google Shopping search URL.
 searchUrl format: https://www.google.com/search?tbm=shop&q=item+name+store+name
 
-Also infer "analysis" fields from the description: color (dominant color of the described item), category (item type), aesthetic (one evocative sentence about the overall style).
+Also infer "analysis" fields from the description: color (dominant color of the described item), category (item type), aesthetic (one evocative sentence about the overall style). Set detectedBrand to null (no image to read from).
 
 category for each match must be exactly one of: top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory.
 
 Return JSON only, no markdown:
-{ "analysis": { "color": string, "category": string, "aesthetic": string }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "searchUrl": string, "category": string } ] }`;
+{ "analysis": { "color": string, "category": string, "aesthetic": string, "detectedBrand": null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "searchUrl": string, "category": string } ] }`;
 }
 
 // ─── Analysis classification consistency check ────────────────────────────────
@@ -778,7 +791,7 @@ function inferCategoryFromAesthetic(aesthetic: string): string | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, textPrompt, filters, tasteProfile, feedbackSignals, mode, scope, retryForCategory, excludeNames, productName, productType } = await req.json() as {
+    const { image, textPrompt, filters, tasteProfile, feedbackSignals, mode, scope, retryForCategory, excludeNames, productName, productType, detectedGender, sourceStore } = await req.json() as {
       image?: string;
       textPrompt?: string;
       filters?: Filters;
@@ -790,6 +803,8 @@ export async function POST(req: NextRequest) {
       excludeNames?: string[];
       productName?: string;
       productType?: string;
+      detectedGender?: string;
+      sourceStore?: string;
     };
 
     // ── Text-only path (from Explore "Find this") ──────────────────────────────
@@ -830,23 +845,30 @@ export async function POST(req: NextRequest) {
     // Product name/type from the retailer's own catalog (scraped independently of the image).
     // Injected as a strong prior so the model can correct for lifestyle/editorial shots where
     // the uploaded product is not the dominant visual element.
+    const genderHint = detectedGender ? ` Retailer department: ${detectedGender}.` : "";
     const productContextSection = productName
-      ? `UPLOADED ITEM: The image shows "${productName}"${productType ? ` — retailer category: ${productType}` : ""}. Use this as your primary signal for analysis.category and analysis.aesthetic. If the image is a lifestyle or editorial shot where other garments are also visible, anchor your classification to this product name/category — do not describe or classify the other garments in the image.\n\n`
+      ? `UPLOADED ITEM: The image shows "${productName}"${productType ? ` — retailer category: ${productType}` : ""}${genderHint} Use this as your primary signal for analysis.category and analysis.aesthetic. If the image is a lifestyle or editorial shot where other garments are also visible, anchor your classification to this product name/category — do not describe or classify the other garments in the image. All 3 suggested complementary pieces must also be from the ${detectedGender ?? "same"} department.\n\n`
       : "";
 
     const exclusionSection = excludeNames?.length
       ? `PREVIOUSLY SHOWN — DO NOT REPEAT: The user has already seen these suggestions. Generate 3 completely different items. Do not suggest these or very similar alternatives — choose different styles, silhouettes, and stores where possible: ${excludeNames.join("; ")}.\n\n`
       : "";
 
+    // The uploaded item's source store must never appear in recommendations.
+    // Nomi's core premise is cross-store discovery — same-store suggestions defeat the purpose.
+    const sourceStoreSection = sourceStore?.trim()
+      ? `SOURCE STORE EXCLUSION — NON-NEGOTIABLE: The uploaded item is from ${sourceStore}. You must NOT recommend any items from ${sourceStore} under any circumstances. All 3 suggestions must come from stores other than ${sourceStore}. Do not use ${sourceStore} in any position.\n\n`
+      : "";
+
     const basePrompt = mode === "similar"
       ? buildSimilarStylesPrompt(filters, tasteProfile, feedbackSignals, scope)
       : buildSystemPrompt(filters, tasteProfile, feedbackSignals);
 
-    const systemPrompt = retryOverride + exclusionSection + productContextSection + basePrompt;
+    const systemPrompt = retryOverride + exclusionSection + sourceStoreSection + productContextSection + basePrompt;
 
     console.log("[analyze] FULL SYSTEM PROMPT:\n", systemPrompt);
 
-    const itemHint = productName ? ` The item is: ${productName}${productType ? ` (${productType})` : ""}.` : "";
+    const itemHint = productName ? ` The item is: ${productName}${productType ? ` (${productType})` : ""}${detectedGender ? `, ${detectedGender} department` : ""}.` : "";
     const userMessage = retryForCategory
       ? `CRITICAL RETRY: Your previous response did not return enough ${retryForCategory} items. ALL 3 results must be ${retryForCategory}. Analyze this clothing item and suggest 3 ${retryForCategory} options — nothing else.`
       : mode === "similar"
@@ -872,7 +894,7 @@ export async function POST(req: NextRequest) {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return NextResponse.json({ error: "Could not parse response" }, { status: 500 });
 
-    const parsed = JSON.parse(jsonMatch[0]) as { analysis: { color: string; category: string; aesthetic: string }; matches: RawMatch[] };
+    const parsed = JSON.parse(jsonMatch[0]) as { analysis: { color: string; category: string; aesthetic: string; detectedBrand?: string | null }; matches: RawMatch[] };
     const isDirectionMode = filters?.recommendationStyle === "direction";
 
     // Cross-check analysis.category against analysis.aesthetic — one retry if they disagree.

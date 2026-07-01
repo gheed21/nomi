@@ -343,7 +343,7 @@ function updateTasteProfile(match: Match, analysis?: Analysis) {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Analysis     = { color: string; category: string; aesthetic: string };
+type Analysis     = { color: string; category: string; aesthetic: string; detectedBrand?: string | null };
 type Match        = { name: string; store?: string; price?: string; reason: string; searchUrl?: string; direction?: string; category?: string; image?: string | null; productLink?: string | null; imageTier?: "confident" | "broad" | null };
 type Result       = { analysis: Analysis; matches: Match[] };
 type RecentSearch = { id: string; image: string; result: Result; searchedAt: number; saved: boolean };
@@ -384,7 +384,7 @@ export default function ResultsPage() {
   const [selectedMatch,   setSelectedMatch]   = useState<Match | null>(null);
   const [savedMatchNames, setSavedMatchNames] = useState<Set<string>>(new Set());
   const [textPiece,       setTextPiece]       = useState<{ name: string; category: string; description: string } | null>(null);
-  const [scrapedProduct,  setScrapedProduct]  = useState<{ name: string; price: string; store: string; productType?: string } | null>(null);
+  const [scrapedProduct,  setScrapedProduct]  = useState<{ name: string; price: string; store: string; productType?: string; detectedGender?: string } | null>(null);
   const [shareOpen,       setShareOpen]       = useState(false);
   const [shareConfirmed,  setShareConfirmed]  = useState(false);
   const [confirmReset,    setConfirmReset]    = useState(false);
@@ -404,7 +404,7 @@ export default function ResultsPage() {
     // Scraped product metadata (cleared after reading to avoid stale state)
     const scraped = localStorage.getItem("nomi_scraped_product");
     const scrapedData = scraped
-      ? JSON.parse(scraped) as { name: string; price: string; store: string; productType?: string }
+      ? JSON.parse(scraped) as { name: string; price: string; store: string; productType?: string; detectedGender?: string }
       : null;
     if (scrapedData) {
       setScrapedProduct(scrapedData);
@@ -473,17 +473,32 @@ export default function ResultsPage() {
         body: JSON.stringify({
           image: stored, filters, tasteProfile, feedbackSignals,
           mode: currentMode, scope: currentScope, retryForCategory,
-          productName: scrapedData?.name,
-          productType: scrapedData?.productType,
+          productName:    scrapedData?.name,
+          productType:    scrapedData?.productType,
+          detectedGender: scrapedData?.detectedGender,
+          sourceStore:    scrapedData?.store,
         }),
       }).then(r => r.json());
+
+    // Hard post-parse safety net: strip any match from the source store before it reaches the UI.
+    // Prompt instructions are soft; this filter is the guarantee.
+    // For URL-paste: src comes from the scrape (scrapedData.store).
+    // For photo-upload: src falls back to analysis.detectedBrand returned by the model.
+    function normStore(s: string): string { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function dropSourceStore(matches: Match[], detectedBrand?: string | null): Match[] {
+      const src = (scrapedData?.store ?? detectedBrand ?? "").trim();
+      if (!src) return matches;
+      const srcNorm = normStore(src);
+      return matches.filter(m => !m.store || normStore(m.store) !== srcNorm);
+    }
 
     function finaliseResult(result: Result, mismatch: string | null) {
       const allSaved: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
       const fb = JSON.parse(localStorage.getItem("nomi_feedback_signals") ?? "{}");
-      setResult(result);
+      const filtered = { ...result, matches: dropSourceStore(result.matches, result.analysis.detectedBrand) };
+      setResult(filtered);
       setCategoryMismatch(mismatch);
-      setMatchSignals(computeMatchSignals(result.matches, result.analysis, allSaved, fb.positive ?? []));
+      setMatchSignals(computeMatchSignals(filtered.matches, filtered.analysis, allSaved, fb.positive ?? []));
       const id = uid();
       setSearchId(id);
       makeThumbnail(stored!).then(thumb => {
@@ -613,8 +628,14 @@ export default function ResultsPage() {
     function applyResult(r: Result) {
       const allSaved: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
       const fb = JSON.parse(localStorage.getItem("nomi_feedback_signals") ?? "{}");
-      setResult(r);
-      setMatchSignals(computeMatchSignals(r.matches, r.analysis, allSaved, fb.positive ?? []));
+      const normS = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+      // URL-paste path: scrapedProduct.store. Photo path: model-detected brand from analysis.
+      const src = (scrapedProduct?.store ?? r.analysis.detectedBrand ?? "").trim();
+      const filtered = src
+        ? { ...r, matches: r.matches.filter(m => !m.store || normS(m.store) !== normS(src)) }
+        : r;
+      setResult(filtered);
+      setMatchSignals(computeMatchSignals(filtered.matches, filtered.analysis, allSaved, fb.positive ?? []));
       setCategoryMismatch(null);
       setLookSaved(false);
     }
@@ -625,8 +646,10 @@ export default function ResultsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image, filters, tasteProfile, feedbackSignals, mode, scope: currentScope, excludeNames,
-          productName: scrapedProduct?.name,
-          productType: scrapedProduct?.productType,
+          productName:    scrapedProduct?.name,
+          productType:    scrapedProduct?.productType,
+          detectedGender: scrapedProduct?.detectedGender,
+          sourceStore:    scrapedProduct?.store,
         }),
       }).then(r => r.json() as Promise<Result & { error?: string }>);
 
