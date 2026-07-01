@@ -203,6 +203,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ── 1c. Gender/department detection ──────────────────────────────────────
+    // Primary: Shopify product_type prefix ("Women:Bottoms:Leggings" → "Women's").
+    // Fallback: URL path segment (/womens/, /mens/, /kids/) — works for any retailer.
+    // Canonical values match Onboarding's GENDER_OPTIONS: "Women's" | "Men's" | "Kids" | "Unisex".
+    let detectedGender = "";
+    if (productType) {
+      const prefix = productType.split(":")[0].trim().toLowerCase();
+      if (prefix === "women" || prefix === "woman")                              detectedGender = "Women's";
+      else if (prefix === "men" || prefix === "man")                             detectedGender = "Men's";
+      else if (["kids", "children", "boys", "girls", "baby"].includes(prefix))  detectedGender = "Kids";
+      else if (prefix === "unisex" || prefix === "gender neutral")               detectedGender = "Unisex";
+    }
+    if (!detectedGender) {
+      const pathname = (() => { try { return new URL(url).pathname.toLowerCase(); } catch { return ""; } })();
+      // Allow /, ., -, or end-of-string after the keyword so we catch /women/, /woman/, /women.html etc.
+      const seg = (word: string) => new RegExp(`(?:^|/)${word}(?:/|\\.|\\-|$)`);
+      if      (seg("wom(?:en|an)s?").test(pathname))                              detectedGender = "Women's";
+      else if (seg("m(?:en|an)s?").test(pathname))                                detectedGender = "Men's";
+      else if (seg("kids?|children|boys?|girls?|baby").test(pathname))            detectedGender = "Kids";
+      else if (seg("unisex").test(pathname))                                       detectedGender = "Unisex";
+    }
+    if (detectedGender) console.log(`[scrape] detected gender: "${detectedGender}" (from ${productType ? "product_type" : "URL path"})`);
+
     // ── 2. Store-specific fallbacks ───────────────────────────────────────────
     const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } })();
 
@@ -280,12 +303,13 @@ export async function POST(req: NextRequest) {
     console.log(`[scrape] success — name:"${name}" store:"${store}" price:"${price}" imageDataLen:${imageData.length}`);
 
     return NextResponse.json({
-      success:     true,
-      name:        name  || "Product",
-      image:       imageData,
-      price:       cleanPrice(price),
-      store:       store  || host.replace("www.", ""),
-      productType: productType || undefined,
+      success:        true,
+      name:           name  || "Product",
+      image:          imageData,
+      price:          cleanPrice(price),
+      store:          store  || host.replace("www.", ""),
+      productType:    productType    || undefined,
+      detectedGender: detectedGender || undefined,
     });
   } catch (err: unknown) {
     const e = err as { message?: string; stack?: string; code?: string; response?: { status?: number } };
