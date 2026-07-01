@@ -14,7 +14,7 @@ export default function NomiNav() {
     <nav style={{
       position: "fixed", bottom: 0, left: 0, right: 0,
       background: "#fff", borderTop: "1px solid #e8e8e8",
-      display: "flex", justifyContent: "center", zIndex: 50,
+      display: "flex", justifyContent: "center", zIndex: 90,
     }}>
       <div style={{ display: "flex", width: "100%", maxWidth: "420px" }}>
         {([
