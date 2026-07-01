@@ -446,9 +446,10 @@ function ChipThumbnail({ src }: { src: string }) {
       src={src} alt=""
       onError={() => setFailed(true)}
       style={{
-        width: "26px", height: "26px", borderRadius: "5px",
+        width: "18px", height: "18px", borderRadius: "4px",
         objectFit: "cover", objectPosition: "top center",
-        flexShrink: 0, display: "block", marginRight: "6px",
+        flexShrink: 0, display: "block", marginRight: "5px",
+        opacity: 0.75,
       }}
     />
   );
@@ -524,7 +525,7 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
                 rel="noopener noreferrer"
                 style={{
                   display: "inline-flex", alignItems: "center",
-                  padding: link.image ? "4px 10px 4px 4px" : "5px 10px",
+                  padding: link.image ? "5px 10px 5px 7px" : "5px 10px",
                   borderRadius: "99px",
                   border: `1.5px solid ${link.fallback ? "#d4c9be" : "#e8ddd0"}`,
                   background: link.fallback ? "#f5f2ef" : "#faf7f3",
