@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import NomiNav from "./components/NomiNav";
+import Onboarding from "./components/Onboarding";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -13,30 +14,36 @@ export type Filters = {
   customColor:         string;
   priceRange:          [number, number];
   sortOrder:           "low-high" | "high-low";
-  itemCategory:        string;
+  itemCategories:      string[];
   itemSubcategories:   string[];
   secondhandOnly:      boolean;
   recommendationStyle: RecStyle;
   description:         string;
+  gender:              string;   // "Women's" | "Men's" | "Kids" | "Unisex" | ""
 };
 
-const PRICE_MAX = 500;
+const PRICE_MAX = 1000;
 
 const DEFAULT_FILTERS: Filters = {
   colors:              [],
   customColor:         "",
   priceRange:          [0, PRICE_MAX],
   sortOrder:           "low-high",
-  itemCategory:        "",
+  itemCategories:      [],
   itemSubcategories:   [],
   secondhandOnly:      false,
   recommendationStyle: "specific",
   description:         "",
+  gender:              "",
 };
+
+const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "Unisex"] as const;
 
 const SUBCATEGORIES: Record<string, string[]> = {
   Tops:       ["Tank top", "Sleeveless top", "Short sleeve top", "Long sleeve top", "Blouse", "Button-down", "Sweatshirt", "Hoodie", "Crop top", "Bodysuit", "Corset"],
   Bottoms:    ["Jeans", "Straight leg jeans", "Wide leg jeans", "Cargo trousers", "Tailored trousers", "Shorts", "Mini skirt", "Midi skirt", "Maxi skirt", "Leggings"],
+  Dresses:    ["Mini dress", "Midi dress", "Maxi dress", "Slip dress", "Wrap dress", "Bodycon dress", "Shirt dress", "Sweater dress", "Halter dress", "Off-the-shoulder dress", "A-line dress"],
+  Jumpsuits:  ["Jumpsuit", "Romper", "Wide leg jumpsuit", "Skinny jumpsuit", "Strapless jumpsuit", "Halter jumpsuit", "Utility jumpsuit", "Culotte jumpsuit"],
   Shoes:      ["Heels", "Block heels", "Mules", "Sneakers", "Loafers", "Boots", "Ankle boots", "Sandals", "Flip flops", "Flats", "Platform shoes"],
   Bags:       ["Tote", "Crossbody", "Clutch", "Shoulder bag", "Mini bag", "Backpack"],
   Outerwear:  ["Blazer", "Leather jacket", "Denim jacket", "Coat", "Trench coat", "Puffer", "Cardigan"],
@@ -79,12 +86,33 @@ type Match       = { name: string; store?: string; price?: string; reason: strin
 type Result      = { analysis: Analysis; matches: Match[] };
 type RecentSearch = { id: string; image: string; result: Result; searchedAt: number; saved: boolean };
 
-function activeCount(f: Filters): number {
-  return (f.colors.length > 0 || f.customColor.trim().length > 0 ? 1 : 0)
-    + (f.priceRange[0] > 0 || f.priceRange[1] < PRICE_MAX ? 1 : 0)
-    + (f.itemCategory.length > 0 || f.secondhandOnly ? 1 : 0)
+function activeCount(f: Filters, mode: "complete" | "similar", scope: "same" | "any"): number {
+  const colors     = ((f.colors?.length ?? 0) > 0 || (f.customColor?.trim().length ?? 0) > 0) ? 1 : 0;
+  const budget     = ((f.priceRange?.[0] ?? 0) > 0 || (f.priceRange?.[1] ?? PRICE_MAX) < PRICE_MAX) ? 1 : 0;
+  const secondhand = f.secondhandOnly ? 1 : 0;
+  const gender     = (f.gender?.trim().length ?? 0) > 0 ? 1 : 0;
+  if (mode === "similar") {
+    return colors + budget + secondhand + gender
+      + (scope !== "same" ? 1 : 0)
+      + (scope === "any" && (f.itemCategories?.length ?? 0) > 0 ? 1 : 0)
+      + ((f.description?.trim().length ?? 0) > 0 ? 1 : 0);
+  }
+  return colors + budget + secondhand + gender
+    + ((f.itemCategories?.length ?? 0) > 0 ? 1 : 0)
     + (f.recommendationStyle !== "specific" ? 1 : 0)
-    + (f.description.trim().length > 0 ? 1 : 0);
+    + ((f.description?.trim().length ?? 0) > 0 ? 1 : 0);
+}
+
+// Migrates persisted filter objects from old shape → current shape.
+// Handles the itemCategory (string) → itemCategories (string[]) rename.
+function normalizeFilters(raw: Partial<Filters> & { itemCategory?: string }): Filters {
+  const base: Filters = { ...DEFAULT_FILTERS, ...raw };
+  if (!Array.isArray(base.itemCategories)) {
+    // old single-select string field → wrap in array (or empty if blank)
+    const legacy = (raw as { itemCategory?: string }).itemCategory ?? "";
+    base.itemCategories = legacy ? [legacy] : [];
+  }
+  return base;
 }
 
 function timeAgo(ts: number): string {
@@ -107,16 +135,60 @@ export default function HomePage() {
   const [recentSearches,  setRecentSearches]  = useState<RecentSearch[]>([]);
   const [filters,         setFilters]         = useState<Filters>(DEFAULT_FILTERS);
   const [filtersOpen,     setFiltersOpen]     = useState(false);
+  const [showOnboarding,  setShowOnboarding]  = useState(false);
 
-  const [urlLoading,  setUrlLoading]  = useState(false);
-  const [scrapeError, setScrapeError] = useState(false);
+  const [urlLoading,       setUrlLoading]       = useState(false);
+  const [scrapeError,      setScrapeError]      = useState(false);
+  const [scrapeBlocked,    setScrapeBlocked]    = useState(false);
+  const [hasRestoredState, setHasRestoredState] = useState(false);
+  const [confirmReset,     setConfirmReset]     = useState(false);
+  const [mode,        setMode]        = useState<"complete" | "similar">("complete");
+  const [scope,       setScope]       = useState<"same" | "any">("same");
+  // Gates the save effect — prevents overwriting sessionStorage with pre-restore defaults
+  const [sessionRestored, setSessionRestored] = useState(false);
 
   const hasInput = !!photo || url.trim().length > 0;
-  const count    = activeCount(filters);
+  const count    = activeCount(filters, mode, scope);
 
+  // Restore on every mount from sessionStorage (survives tab-switches within a session;
+  // cleared on tab close so fresh opens start blank).
   useEffect(() => {
+    if (!localStorage.getItem("nomi-onboarded")) setShowOnboarding(true);
     setRecentSearches(JSON.parse(localStorage.getItem("nomi_recent_searches") ?? "[]"));
+
+    try {
+      const raw = sessionStorage.getItem("nomi_home_state");
+      const s = raw ? JSON.parse(raw) : null;
+      if (s) {
+        if (s.inputType === "photo") {
+          const img = localStorage.getItem("nomi_current_upload");
+          if (img) setPhoto(img);
+        } else if (s.url) {
+          setUrl(s.url);
+        }
+        if (s.mode)        setMode(s.mode);
+        if (s.scope)       setScope(s.scope);
+        if (s.filters)     setFilters(normalizeFilters(s.filters));
+        if (s.filtersOpen) setFiltersOpen(true);
+        setHasRestoredState(true);
+      }
+    } catch { /* ignore */ }
+
+    // Mark restoration complete — React 18 batches all setState calls above into one
+    // re-render, so the save effect below sees the restored values on its first run.
+    setSessionRestored(true);
   }, []);
+
+  // Persist home state to sessionStorage on every change so tab-switching doesn't lose it.
+  // Gated on sessionRestored to avoid saving pre-restore defaults on the initial mount.
+  useEffect(() => {
+    if (!sessionRestored) return;
+    sessionStorage.setItem("nomi_home_state", JSON.stringify({
+      inputType: photo ? "photo" : url ? "url" : null,
+      url:       url || undefined,
+      mode, scope, filters, filtersOpen,
+    }));
+  }, [sessionRestored, photo, url, mode, scope, filters, filtersOpen]);
 
   function handleFile(file: File) {
     if (!file.type.startsWith("image/")) return;
@@ -126,14 +198,22 @@ export default function HomePage() {
   }
 
   async function handleFindMatches() {
+    console.log("[nomi] Find matches clicked — mode:", mode, "scope:", scope);
+    console.log("[nomi] filters at click time — itemCategories:", filters.itemCategories, "itemSubcategories:", filters.itemSubcategories);
+    console.log("[nomi] description at submit time:", JSON.stringify(filters.description));
     if (photo) {
       localStorage.removeItem("nomi_scraped_product");
       localStorage.setItem("nomi_current_upload", photo);
       localStorage.setItem("nomi_current_filters", JSON.stringify(filters));
+      localStorage.setItem("nomi_current_mode", mode);
+      localStorage.setItem("nomi_current_scope", scope);
+      localStorage.setItem("nomi_home_return_state", JSON.stringify({ inputType: "photo", mode, scope, filters, filtersOpen }));
+      console.log("[nomi] wrote to localStorage nomi_current_mode:", mode, "nomi_current_scope:", scope);
       router.push("/results");
     } else if (url.trim()) {
       setUrlLoading(true);
       setScrapeError(false);
+      setScrapeBlocked(false);
       try {
         const res  = await fetch("/api/scrape-product", {
           method: "POST",
@@ -141,12 +221,27 @@ export default function HomePage() {
           body: JSON.stringify({ url: url.trim() }),
         });
         const data = await res.json();
-        if (!data.success) { setScrapeError(true); return; }
+        if (!data.success) {
+          if (data.blocked) setScrapeBlocked(true);
+          else setScrapeError(true);
+          return;
+        }
+        // Pre-fill gender filter from detected department so subsequent calls stay consistent.
+        // Also ensure productType is persisted here — it was previously dropped.
+        const filtersWithGender = data.detectedGender
+          ? { ...filters, gender: data.detectedGender }
+          : filters;
+        if (data.detectedGender) setFilters(f => ({ ...f, gender: data.detectedGender }));
         localStorage.setItem("nomi_current_upload",   data.image);
-        localStorage.setItem("nomi_current_filters",  JSON.stringify(filters));
+        localStorage.setItem("nomi_current_filters",  JSON.stringify(filtersWithGender));
+        localStorage.setItem("nomi_current_mode",     mode);
+        localStorage.setItem("nomi_current_scope",    scope);
         localStorage.setItem("nomi_scraped_product",  JSON.stringify({
           name: data.name, price: data.price, store: data.store,
+          productType:    data.productType    ?? undefined,
+          detectedGender: data.detectedGender ?? undefined,
         }));
+        localStorage.setItem("nomi_home_return_state", JSON.stringify({ inputType: "url", url: url.trim(), mode, scope, filters: filtersWithGender, filtersOpen }));
         router.push("/results");
       } catch {
         setScrapeError(true);
@@ -171,12 +266,15 @@ export default function HomePage() {
     }));
   }
 
-  function selectCategory(cat: string) {
-    setFilters(f => ({
-      ...f,
-      itemCategory:      f.itemCategory === cat ? "" : cat,
-      itemSubcategories: [],
-    }));
+  function toggleCategory(cat: string) {
+    setFilters(f => {
+      const removing = f.itemCategories.includes(cat);
+      return {
+        ...f,
+        itemCategories:    removing ? f.itemCategories.filter(c => c !== cat) : [...f.itemCategories, cat],
+        itemSubcategories: removing ? f.itemSubcategories.filter(s => !SUBCATEGORIES[cat].includes(s)) : f.itemSubcategories,
+      };
+    });
   }
 
   function toggleSubcategory(sub: string) {
@@ -199,6 +297,11 @@ export default function HomePage() {
           <p style={{ fontSize: "14px", color: "#6b6b6b", marginTop: "10px", letterSpacing: "-0.1px" }}>
             Find matching pieces from any store
           </p>
+          {hasRestoredState && (
+            <button onClick={() => setConfirmReset(true)} style={{ marginTop: "12px", background: "none", border: "none", cursor: "pointer", fontSize: "12px", color: "#bbb", textDecoration: "underline", textUnderlineOffset: "2px", padding: 0 }}>
+              Start over
+            </button>
+          )}
         </header>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -255,13 +358,35 @@ export default function HomePage() {
           {/* URL */}
           <div>
             <input type="url" placeholder="Paste a product link" value={url}
-              onChange={(e) => { setUrl(e.target.value); setScrapeError(false); }}
-              style={{ width: "100%", padding: "15px 16px", borderRadius: "16px", border: `1.5px solid ${scrapeError ? "#ef4444" : url ? "#000" : "#e8e8e8"}`, fontSize: "15px", color: "#000", background: "#fff", transition: "border-color 0.15s" }} />
-            {scrapeError && (
-              <p style={{ fontSize: "13px", color: "#ef4444", marginTop: "8px", lineHeight: 1.5 }}>
-                We couldn&rsquo;t read that link. Try uploading a photo instead.
+              onChange={(e) => { setUrl(e.target.value); setScrapeError(false); setScrapeBlocked(false); }}
+              style={{ width: "100%", padding: "15px 16px", borderRadius: "16px", border: `1.5px solid ${scrapeError || scrapeBlocked ? "#c9a96e" : url ? "#000" : "#e8e8e8"}`, fontSize: "15px", color: "#000", background: "#fff", transition: "border-color 0.15s" }} />
+            {(scrapeBlocked || scrapeError) && (
+              <p style={{ fontSize: "13px", color: "#b8966a", marginTop: "8px", lineHeight: 1.5 }}>
+                Link reading is temporarily limited — uploading a photo works perfectly and gives even better results.
               </p>
             )}
+          </div>
+
+          {/* Mode selector */}
+          <div style={{ display: "flex", gap: "10px" }}>
+            {([
+              { key: "complete" as const, label: "Complete the outfit", sub: "Find pieces that pair with this",         icon: <OutfitIcon selected={mode === "complete"} /> },
+              { key: "similar"  as const, label: "Find similar styles",  sub: "Find more like this, from other stores", icon: <SimilarIcon selected={mode === "similar"} /> },
+            ]).map(({ key, label, sub, icon }) => {
+              const on = mode === key;
+              return (
+                <button key={key} onClick={() => setMode(key)} style={{
+                  flex: 1, background: "#f7f6f3", cursor: "pointer", textAlign: "left",
+                  border: `${on ? "2px" : "1.5px"} solid ${on ? "#c9a96e" : "#e8e8e8"}`,
+                  borderRadius: "16px", padding: "16px 14px",
+                  transition: "border-color 0.15s",
+                }}>
+                  <div>{icon}</div>
+                  <p style={{ fontSize: "13px", fontWeight: 600, color: on ? "#c9a96e" : "#000", marginTop: "10px", letterSpacing: "-0.1px", lineHeight: 1.3 }}>{label}</p>
+                  <p style={{ fontSize: "11px", color: "#aaa", marginTop: "5px", lineHeight: 1.4 }}>{sub}</p>
+                </button>
+              );
+            })}
           </div>
 
           {/* ── Filters ────────────────────────────────────────────────────── */}
@@ -287,8 +412,59 @@ export default function HomePage() {
               <ChevronDown open={filtersOpen} />
             </button>
 
-            <div style={{ maxHeight: filtersOpen ? "1200px" : "0px", overflow: "hidden", transition: "max-height 0.35s ease" }}>
+            <div style={{ maxHeight: filtersOpen ? "3000px" : "0px", overflow: "hidden", transition: "max-height 0.35s ease" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "24px", paddingTop: "20px" }}>
+
+                {/* ── Secondhand toggle ── */}
+                <div style={{ background: "#f7f6f3", borderRadius: "12px", padding: "14px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
+                  <div>
+                    <p style={{ fontSize: "14px", fontWeight: 500, color: "#000", marginBottom: "3px" }}>Secondhand</p>
+                    <p style={{ fontSize: "12px", color: "#aaa", lineHeight: 1.4 }}>Prioritize items from Depop, Vinted, Poshmark, ThredUp</p>
+                  </div>
+                  <button
+                    onClick={() => setFilters(f => ({ ...f, secondhandOnly: !f.secondhandOnly }))}
+                    style={{
+                      width: "44px", height: "26px", borderRadius: "13px", flexShrink: 0,
+                      background: filters.secondhandOnly ? "#c9a96e" : "#d0cdc9",
+                      border: "none", cursor: "pointer", position: "relative",
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    <div style={{
+                      width: "20px", height: "20px", borderRadius: "50%",
+                      background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                      position: "absolute", top: "3px",
+                      left: filters.secondhandOnly ? "21px" : "3px",
+                      transition: "left 0.2s",
+                    }} />
+                  </button>
+                </div>
+
+                {/* ── Gender / department ── */}
+                <div>
+                  <FilterLabel>Department</FilterLabel>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    {GENDER_OPTIONS.map(opt => {
+                      const on = filters.gender === opt;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => setFilters(f => ({ ...f, gender: f.gender === opt ? "" : opt }))}
+                          style={{
+                            flex: 1, padding: "8px 4px", borderRadius: "99px",
+                            border: `1.5px solid ${on ? "#c9a96e" : "#e8e8e8"}`,
+                            background: on ? "#f7f0e4" : "#fff",
+                            color: on ? "#c9a96e" : "#6b6b6b",
+                            fontSize: "12px", fontWeight: on ? 600 : 400,
+                            cursor: "pointer", transition: "all 0.1s", fontFamily: "inherit",
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
 
                 {/* ── Color swatches ── */}
                 <div>
@@ -351,7 +527,7 @@ export default function HomePage() {
                     </span>
                     <span style={{ fontSize: "13px", color: "#aaa", margin: "0 2px" }}>—</span>
                     <span style={{ fontSize: "16px", fontWeight: 600, color: "#000", letterSpacing: "-0.3px" }}>
-                      {filters.priceRange[1] >= PRICE_MAX ? "$500+" : `$${filters.priceRange[1]}`}
+                      {filters.priceRange[1] >= PRICE_MAX ? "$1000+" : `$${filters.priceRange[1]}`}
                     </span>
                   </div>
 
@@ -376,110 +552,121 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* ── What are you looking for? ── */}
-                <div>
-                  <FilterLabel>What are you looking for?</FilterLabel>
-                  {/* Category pills */}
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: filters.itemCategory ? "14px" : "0" }}>
-                    {CATEGORIES.map(cat => {
-                      const on = filters.itemCategory === cat;
-                      return (
-                        <button key={cat} onClick={() => selectCategory(cat)} style={{
-                          padding: "7px 14px", borderRadius: "99px", border: "1.5px solid",
-                          borderColor: on ? "#000" : "#e8e8e8",
-                          background: on ? "#000" : "#fff",
-                          color: on ? "#fff" : "#6b6b6b",
-                          fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
-                        }}>
-                          {cat}
-                        </button>
-                      );
-                    })}
+                {/* ── Complete the outfit: category picker + rec style + free text ── */}
+                {mode === "complete" && (<>
+                  <CategoryPicker
+                    itemCategories={filters.itemCategories}
+                    itemSubcategories={filters.itemSubcategories}
+                    onToggleCategory={toggleCategory}
+                    onToggleSubcategory={toggleSubcategory}
+                    label="What are you looking for?"
+                  />
+
+                  <div>
+                    <FilterLabel>Recommendation style</FilterLabel>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {([
+                        { key: "specific",  label: "Take me to a specific product" },
+                        { key: "direction", label: "Show me the general direction" },
+                      ] as { key: RecStyle; label: string }[]).map(({ key, label }) => {
+                        const on = filters.recommendationStyle === key;
+                        return (
+                          <button key={key} onClick={() => setFilters(f => ({ ...f, recommendationStyle: key }))} style={{
+                            display: "flex", alignItems: "center", gap: "12px",
+                            padding: "13px 14px", borderRadius: "12px", border: "1.5px solid",
+                            borderColor: on ? "#c9a96e" : "#e8e8e8",
+                            background: on ? "#f7f0e4" : "#fff",
+                            cursor: "pointer", textAlign: "left", transition: "all 0.1s",
+                          }}>
+                            <div style={{
+                              width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
+                              border: `2px solid ${on ? "#c9a96e" : "#ccc"}`,
+                              background: on ? "#c9a96e" : "#fff", transition: "all 0.1s",
+                            }} />
+                            <span style={{ fontSize: "13px", fontWeight: 500, color: on ? "#c9a96e" : "#444" }}>
+                              {label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  {/* Subcategories + secondhand (when a category is selected) */}
-                  {filters.itemCategory && (
-                    <div style={{ background: "#f7f6f3", borderRadius: "14px", padding: "14px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
-                        {SUBCATEGORIES[filters.itemCategory].map(sub => {
-                          const on = filters.itemSubcategories.includes(sub);
+                  <div>
+                    <FilterLabel>Describe what you want</FilterLabel>
+                    <textarea
+                      placeholder="e.g. no heels, I already have a bag, just a top, something for a wedding, more casual, no logos"
+                      value={filters.description}
+                      onChange={(e) => { console.log("[nomi] description typed:", e.target.value); setFilters(f => ({ ...f, description: e.target.value })); }}
+                      rows={3}
+                      style={{
+                        width: "100%", padding: "13px 16px", borderRadius: "12px",
+                        border: `1.5px solid ${filters.description ? "#000" : "#e8e8e8"}`,
+                        fontSize: "14px", color: "#000", background: "#fff",
+                        transition: "border-color 0.15s", resize: "none",
+                        fontFamily: "inherit", lineHeight: 1.5,
+                      }}
+                    />
+                  </div>
+                </>)}
+
+                {/* ── Find similar styles: scope picker + category picker for any ── */}
+                {mode === "similar" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                    <div>
+                      <FilterLabel>Search within</FilterLabel>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {([
+                          { key: "same" as const, label: "Same category" },
+                          { key: "any"  as const, label: "Other categories" },
+                        ]).map(({ key, label }) => {
+                          const on = scope === key;
                           return (
-                            <button key={sub} onClick={() => toggleSubcategory(sub)} style={{
-                              padding: "6px 12px", borderRadius: "99px", border: "1.5px solid",
-                              borderColor: on ? "#c9a96e" : "#e0dbd4",
-                              background: on ? "#f7f0e4" : "#fff",
-                              color: on ? "#c9a96e" : "#6b6b6b",
-                              fontSize: "12px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+                            <button key={key} onClick={() => setScope(key)} style={{
+                              padding: "8px 16px", borderRadius: "99px", border: "1.5px solid",
+                              borderColor: on ? "#c9a96e" : "#e8e8e8",
+                              background:  on ? "#f7f0e4" : "#fff",
+                              color:       on ? "#c9a96e" : "#6b6b6b",
+                              fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
                             }}>
-                              {sub}
+                              {label}
                             </button>
                           );
                         })}
                       </div>
-
-                      {/* Secondhand toggle */}
-                      <div style={{ borderTop: "1px solid #ede9e4", paddingTop: "14px" }}>
-                        <Toggle
-                          label="Secondhand only"
-                          value={filters.secondhandOnly}
-                          onChange={(v) => setFilters(f => ({ ...f, secondhandOnly: v }))}
-                        />
-                      </div>
                     </div>
-                  )}
-                </div>
 
-                {/* ── Recommendation style ── */}
-                <div>
-                  <FilterLabel>Recommendation style</FilterLabel>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {([
-                      { key: "specific",  label: "Take me to a specific product" },
-                      { key: "direction", label: "Show me the general direction" },
-                    ] as { key: RecStyle; label: string }[]).map(({ key, label }) => {
-                      const on = filters.recommendationStyle === key;
-                      return (
-                        <button key={key} onClick={() => setFilters(f => ({ ...f, recommendationStyle: key }))} style={{
-                          display: "flex", alignItems: "center", gap: "12px",
-                          padding: "13px 14px", borderRadius: "12px", border: "1.5px solid",
-                          borderColor: on ? "#c9a96e" : "#e8e8e8",
-                          background: on ? "#f7f0e4" : "#fff",
-                          cursor: "pointer", textAlign: "left", transition: "all 0.1s",
-                        }}>
-                          <div style={{
-                            width: "16px", height: "16px", borderRadius: "50%", flexShrink: 0,
-                            border: `2px solid ${on ? "#c9a96e" : "#ccc"}`,
-                            background: on ? "#c9a96e" : "#fff", transition: "all 0.1s",
-                          }} />
-                          <span style={{ fontSize: "13px", fontWeight: 500, color: on ? "#c9a96e" : "#444" }}>
-                            {label}
-                          </span>
-                        </button>
-                      );
-                    })}
+                    {scope === "any" && (
+                      <CategoryPicker
+                        itemCategories={filters.itemCategories}
+                        itemSubcategories={filters.itemSubcategories}
+                        onToggleCategory={toggleCategory}
+                        onToggleSubcategory={toggleSubcategory}
+                        label="What are you looking for?"
+                      />
+                    )}
+
+                    <div>
+                      <FilterLabel>Describe what you want</FilterLabel>
+                      <textarea
+                        placeholder="e.g. no heels, I already have a bag, just a top, something for a wedding, more casual, no logos"
+                        value={filters.description}
+                        onChange={(e) => { console.log("[nomi] description typed:", e.target.value); setFilters(f => ({ ...f, description: e.target.value })); }}
+                        rows={3}
+                        style={{
+                          width: "100%", padding: "13px 16px", borderRadius: "12px",
+                          border: `1.5px solid ${filters.description ? "#000" : "#e8e8e8"}`,
+                          fontSize: "14px", color: "#000", background: "#fff",
+                          transition: "border-color 0.15s", resize: "none",
+                          fontFamily: "inherit", lineHeight: 1.5,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                {/* ── Free text ── */}
-                <div>
-                  <FilterLabel>Describe what you want</FilterLabel>
-                  <textarea
-                    placeholder="e.g. something modest, no heels, I already have a bag, looking for a top only"
-                    value={filters.description}
-                    onChange={(e) => setFilters(f => ({ ...f, description: e.target.value }))}
-                    rows={3}
-                    style={{
-                      width: "100%", padding: "13px 16px", borderRadius: "12px",
-                      border: `1.5px solid ${filters.description ? "#000" : "#e8e8e8"}`,
-                      fontSize: "14px", color: "#000", background: "#fff",
-                      transition: "border-color 0.15s", resize: "none",
-                      fontFamily: "inherit", lineHeight: 1.5,
-                    }}
-                  />
-                </div>
+                )}
 
                 {count > 0 && (
-                  <button onClick={() => setFilters(DEFAULT_FILTERS)} style={{ alignSelf: "flex-start", fontSize: "12px", color: "#aaa", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: "2px" }}>
+                  <button onClick={() => { setFilters(DEFAULT_FILTERS); setScope("same"); }} style={{ alignSelf: "flex-start", fontSize: "12px", color: "#aaa", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: "2px" }}>
                     Reset filters
                   </button>
                 )}
@@ -539,6 +726,40 @@ export default function HomePage() {
       </div>
     </div>
     <NomiNav />
+    {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
+
+    {/* Start over confirmation */}
+    {confirmReset && (
+      <div onClick={() => setConfirmReset(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300 }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "20px 20px 0 0", width: "100%", maxWidth: "420px" }}>
+          <div style={{ width: "36px", height: "4px", borderRadius: "2px", background: "#e0e0e0", margin: "12px auto 0" }} />
+          <div style={{ padding: "20px 20px 44px" }}>
+            <p style={{ fontSize: "16px", fontWeight: 600, letterSpacing: "-0.2px", marginBottom: "6px" }}>Clear this search and start over?</p>
+            <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.5, marginBottom: "24px" }}>This will clear your uploaded photo, mode selection, and all filters.</p>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "14px", borderRadius: "14px", border: "1.5px solid #e8e8e8", background: "#fff", color: "#444", fontSize: "14px", fontWeight: 500, cursor: "pointer" }}>
+                Cancel
+              </button>
+              <button onClick={() => {
+                setPhoto(null);
+                setUrl("");
+                setMode("complete");
+                setScope("same");
+                setFilters(DEFAULT_FILTERS);
+                setFiltersOpen(false);
+                setHasRestoredState(false);
+                setConfirmReset(false);
+                localStorage.removeItem("nomi_home_return_state");
+                localStorage.removeItem("nomi_current_upload");
+                sessionStorage.removeItem("nomi_home_state");
+              }} style={{ flex: 1, padding: "14px", borderRadius: "14px", border: "none", background: "#000", color: "#fff", fontSize: "14px", fontWeight: 600, cursor: "pointer" }}>
+                Start over
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
@@ -603,6 +824,63 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
   );
 }
 
+function CategoryPicker({ itemCategories, itemSubcategories, onToggleCategory, onToggleSubcategory, label }: {
+  itemCategories: string[];
+  itemSubcategories: string[];
+  onToggleCategory: (cat: string) => void;
+  onToggleSubcategory: (sub: string) => void;
+  label: string;
+}) {
+  return (
+    <div>
+      <FilterLabel>{label}</FilterLabel>
+      <p style={{ fontSize: "11px", color: "#bbb", marginTop: "-8px", marginBottom: "12px", letterSpacing: "-0.1px" }}>
+        Select one or more categories
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: itemCategories.length > 0 ? "12px" : "0" }}>
+        {CATEGORIES.map(cat => {
+          const on = itemCategories.includes(cat);
+          return (
+            <button key={cat} onClick={() => onToggleCategory(cat)} style={{
+              padding: "7px 14px", borderRadius: "99px", border: "1.5px solid",
+              borderColor: on ? "#000" : "#e8e8e8",
+              background: on ? "#000" : "#fff",
+              color: on ? "#fff" : "#6b6b6b",
+              fontSize: "13px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+            }}>
+              {cat}
+            </button>
+          );
+        })}
+      </div>
+      {/* Subcategory panel per selected category, stacked vertically */}
+      {itemCategories.map(cat => (
+        <div key={cat} style={{ background: "#f7f6f3", borderRadius: "14px", padding: "12px 14px 14px", marginBottom: "8px" }}>
+          <p style={{ fontSize: "10px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "10px" }}>
+            {cat}
+          </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "7px" }}>
+            {SUBCATEGORIES[cat].map(sub => {
+              const on = itemSubcategories.includes(sub);
+              return (
+                <button key={sub} onClick={() => onToggleSubcategory(sub)} style={{
+                  padding: "6px 12px", borderRadius: "99px", border: "1.5px solid",
+                  borderColor: on ? "#c9a96e" : "#e0dbd4",
+                  background: on ? "#f7f0e4" : "#fff",
+                  color: on ? "#c9a96e" : "#6b6b6b",
+                  fontSize: "12px", fontWeight: 500, cursor: "pointer", transition: "all 0.1s",
+                }}>
+                  {sub}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function FilterLabel({ children }: { children: React.ReactNode }) {
   return (
     <p style={{ fontSize: "11px", fontWeight: 600, color: "#bbb", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "12px" }}>
@@ -635,6 +913,30 @@ function ChevronDown({ open }: { open: boolean }) {
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none"
       style={{ transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>
       <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function OutfitIcon({ selected }: { selected: boolean }) {
+  const c = selected ? "#c9a96e" : "#bbb";
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <path d="M8 3L3 7.5l3 1.5V19h10V9l3-1.5L14 3a3 3 0 01-6 0z"
+        stroke={c} strokeWidth="1.25" strokeLinejoin="round"
+        fill={selected ? "#f7f0e4" : "none"} />
+    </svg>
+  );
+}
+
+function SimilarIcon({ selected }: { selected: boolean }) {
+  const c = selected ? "#c9a96e" : "#bbb";
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <circle cx="10" cy="10" r="6"
+        stroke={c} strokeWidth="1.25"
+        fill={selected ? "#f7f0e4" : "none"} />
+      <path d="M14.5 14.5L18.5 18.5" stroke={c} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M7.5 10h5M10 7.5v5" stroke={c} strokeWidth="1.25" strokeLinecap="round" />
     </svg>
   );
 }
