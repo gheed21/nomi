@@ -7,14 +7,14 @@ import { useState } from "react";
 type Props = { onComplete: () => void };
 
 const STYLE_OPTIONS = [
-  { key: "minimal",    label: "Clean & minimal", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400" },
-  { key: "streetwear", label: "Streetwear",       image: "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=400" },
-  { key: "romantic",   label: "Soft & romantic",  image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400" },
-  { key: "classic",    label: "Timeless classic", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
-  { key: "edgy",       label: "Edgy",             image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400" },
-  { key: "boho",       label: "Boho",             image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400" },
-  { key: "oldmoney",   label: "Old money",        image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400" },
-  { key: "coastal",    label: "Coastal",          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" },
+  { key: "minimal",    label: "Clean & minimal", image: "/styles/minimal.png"    },
+  { key: "streetwear", label: "Streetwear",       image: "/styles/streetwear.png" },
+  { key: "romantic",   label: "Soft & romantic",  image: "/styles/romantic.png"   },
+  { key: "classic",    label: "Timeless classic", image: "/styles/classic.png"    },
+  { key: "edgy",       label: "Edgy",             image: "/styles/edgy.png"       },
+  { key: "boho",       label: "Boho",             image: "/styles/boho.png"       },
+  { key: "oldmoney",   label: "Old money",        image: "/styles/oldmoney.png"   },
+  { key: "coastal",    label: "Coastal",          image: "/styles/coastal.png"    },
 ];
 
 const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "All"];
