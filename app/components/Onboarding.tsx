@@ -151,7 +151,7 @@ export default function Onboarding({ onComplete }: Props) {
                 What&apos;s your style?
               </h2>
               <p style={{ fontSize: "13px", color: "#aaa", marginBottom: "18px", lineHeight: 1.5 }}>
-                Pick everything that feels like you
+                Select the ones that describe your style the most
               </p>
 
               {/* 1 — Style image grid */}
@@ -167,17 +167,20 @@ export default function Onboarding({ onComplete }: Props) {
                     }}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={image} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      {on && (
-                        <div style={{
-                          position: "absolute", top: "6px", right: "6px",
-                          width: "20px", height: "20px", borderRadius: "50%",
-                          background: "#c9a96e", display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
+                      <div style={{
+                        position: "absolute", top: "6px", right: "6px",
+                        width: "20px", height: "20px", borderRadius: "50%",
+                        background: on ? "#c9a96e" : "rgba(255,255,255,0.35)",
+                        border: on ? "none" : "1.5px solid rgba(255,255,255,0.85)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "background 0.12s",
+                      }}>
+                        {on && (
                           <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
                             <path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </button>
                   );
                 })}
