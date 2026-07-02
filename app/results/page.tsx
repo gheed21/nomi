@@ -445,11 +445,20 @@ export default function ResultsPage() {
     const currentScope = (localStorage.getItem("nomi_current_scope") ?? "same")    as "same" | "any";
     setMode(currentMode);
 
+    // Defined here so it's available for both the preloaded-restore path and finaliseResult.
+    function normStore(s: string): string { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
+    function dropSourceStore(matches: Match[], detectedBrand?: string | null): Match[] {
+      const src = (scrapedData?.store ?? detectedBrand ?? "").trim();
+      if (!src) return matches;
+      const srcNorm = normStore(src);
+      return matches.filter(m => !m.store || normStore(m.store) !== srcNorm);
+    }
+
     const preloaded = localStorage.getItem("nomi_current_result");
     if (preloaded) {
       localStorage.removeItem("nomi_current_result");
       const s: RecentSearch = JSON.parse(preloaded);
-      setResult(s.result);
+      setResult({ ...s.result, matches: dropSourceStore(s.result.matches, s.result.analysis.detectedBrand) });
       setSearchId(s.id);
       setLookSaved(s.saved ?? false);
       return;
@@ -480,18 +489,6 @@ export default function ResultsPage() {
         }),
       }).then(r => r.json());
 
-    // Hard post-parse safety net: strip any match from the source store before it reaches the UI.
-    // Prompt instructions are soft; this filter is the guarantee.
-    // For URL-paste: src comes from the scrape (scrapedData.store).
-    // For photo-upload: src falls back to analysis.detectedBrand returned by the model.
-    function normStore(s: string): string { return s.toLowerCase().replace(/[^a-z0-9]/g, ""); }
-    function dropSourceStore(matches: Match[], detectedBrand?: string | null): Match[] {
-      const src = (scrapedData?.store ?? detectedBrand ?? "").trim();
-      if (!src) return matches;
-      const srcNorm = normStore(src);
-      return matches.filter(m => !m.store || normStore(m.store) !== srcNorm);
-    }
-
     function finaliseResult(result: Result, mismatch: string | null) {
       const allSaved: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
       const fb = JSON.parse(localStorage.getItem("nomi_feedback_signals") ?? "{}");
@@ -502,7 +499,7 @@ export default function ResultsPage() {
       const id = uid();
       setSearchId(id);
       makeThumbnail(stored!).then(thumb => {
-        const entry: RecentSearch = { id, image: thumb, result, searchedAt: Date.now(), saved: false };
+        const entry: RecentSearch = { id, image: thumb, result: filtered, searchedAt: Date.now(), saved: false };
         const prev: RecentSearch[] = JSON.parse(localStorage.getItem("nomi_recent_searches") ?? "[]");
         try {
           localStorage.setItem("nomi_recent_searches", JSON.stringify([entry, ...prev].slice(0, 6)));
@@ -573,7 +570,7 @@ export default function ResultsPage() {
     // Original piece
     lookItems.push({
       id: uid(),
-      name: scrapedProduct?.name ?? result.analysis.category,
+      name: scrapedProduct?.name ?? (result.analysis.detectedBrand ? `${result.analysis.detectedBrand} ${result.analysis.category}` : result.analysis.category),
       store: scrapedProduct?.store,
       price: scrapedProduct?.price,
       image: thumb,
@@ -1186,7 +1183,7 @@ function SaveToSheet({ match, searchImage, analysis, originalMeta, onSaved, onCl
       // Original piece
       {
         id: uid(),
-        name: originalMeta?.name ?? analysis?.category ?? "Your piece",
+        name: originalMeta?.name ?? (analysis?.detectedBrand ? `${analysis.detectedBrand} ${analysis.category}` : analysis?.category ?? "Your piece"),
         store: originalMeta?.store,
         price: originalMeta?.price,
         image: thumb,
