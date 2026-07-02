@@ -147,9 +147,12 @@ export default function Onboarding({ onComplete }: Props) {
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — helps Nomi match your taste from day one.
               </p>
-              <h2 style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.6px", color: "#000", marginBottom: "22px", lineHeight: 1.2 }}>
+              <h2 style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.6px", color: "#000", marginBottom: "6px", lineHeight: 1.2 }}>
                 What&apos;s your style?
               </h2>
+              <p style={{ fontSize: "13px", color: "#aaa", marginBottom: "18px", lineHeight: 1.5 }}>
+                Pick everything that feels like you
+              </p>
 
               {/* 1 — Style image grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
@@ -158,7 +161,7 @@ export default function Onboarding({ onComplete }: Props) {
                   return (
                     <button key={key} onClick={() => toggleStyle(key)} style={{
                       position: "relative", aspectRatio: "1", borderRadius: "12px",
-                      border: `${on ? "2.5px" : "0.5px"} solid ${on ? "#c9a96e" : "var(--border)"}`,
+                      border: on ? "2.5px solid #c9a96e" : "none",
                       padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
                       transition: "border-color 0.12s",
                     }}>
