@@ -219,12 +219,13 @@ export default function SavedPage() {
                     <span
                       onClick={activeBoardId === "all" ? undefined : startRename}
                       style={{
+                        display: "inline-flex", alignItems: "center", gap: "5px",
                         fontSize: "16px", fontWeight: 600, letterSpacing: "-0.3px",
                         cursor: activeBoardId === "all" ? "default" : "text",
-                        borderBottom: activeBoardId === "all" ? "none" : "1px dashed transparent",
                       }}
                     >
                       {activeName}
+                      {activeBoardId !== "all" && <PencilIcon />}
                     </span>
                   )}
                   <div style={{ width: "32px" }} />
@@ -756,4 +757,13 @@ function PlusIcon() {
 }
 function BookmarkSmall() {
   return <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 2h7a.5.5 0 01.5.5v9L6 9.5 2 11.5V2.5a.5.5 0 01.5-.5z" fill="#c9a96e" /></svg>;
+}
+function PencilIcon() {
+  // Tabler ti-pencil path (24px viewBox, scaled to 14px render)
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 20h4l10.5-10.5a2.828 2.828 0 10-4-4L4 16v4z" />
+      <path d="M13.5 6.5l4 4" />
+    </svg>
+  );
 }
