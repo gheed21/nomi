@@ -6,14 +6,15 @@ import { useState } from "react";
 
 type Props = { onComplete: () => void };
 
-const STYLE_CHIPS = [
-  "Clean & minimal",
-  "Streetwear",
-  "Feminine",
-  "Classic",
-  "Edgy",
-  "Preppy",
-  "I have no idea",
+const STYLE_OPTIONS = [
+  { key: "minimal",    label: "Clean & minimal", image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400" },
+  { key: "streetwear", label: "Streetwear",       image: "https://images.unsplash.com/photo-1571945153237-4929e783af4a?w=400" },
+  { key: "romantic",   label: "Soft & romantic",  image: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=400" },
+  { key: "classic",    label: "Timeless classic", image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
+  { key: "edgy",       label: "Edgy",             image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=400" },
+  { key: "boho",       label: "Boho",             image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400" },
+  { key: "oldmoney",   label: "Old money",        image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400" },
+  { key: "coastal",    label: "Coastal",          image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400" },
 ];
 
 const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "All"];
@@ -150,23 +151,43 @@ export default function Onboarding({ onComplete }: Props) {
                 What&apos;s your style?
               </h2>
 
-              {/* 1 — Style chips */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
-                {STYLE_CHIPS.map(chip => {
-                  const on = styles.includes(chip);
+              {/* 1 — Style image grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
+                {STYLE_OPTIONS.map(({ key, image, label }) => {
+                  const on = styles.includes(key);
                   return (
-                    <button key={chip} onClick={() => toggleStyle(chip)} style={{
-                      padding: "9px 16px", borderRadius: "20px",
-                      border: `1.5px solid ${on ? "#c9a96e" : "#e8e8e8"}`,
-                      background: on ? "#f7f0e4" : "#fff",
-                      color: on ? "#c9a96e" : "#444",
-                      fontSize: "14px", fontWeight: on ? 600 : 500,
-                      cursor: "pointer", transition: "all 0.12s",
+                    <button key={key} onClick={() => toggleStyle(key)} style={{
+                      position: "relative", aspectRatio: "1", borderRadius: "12px",
+                      border: `${on ? "2.5px" : "0.5px"} solid ${on ? "#c9a96e" : "var(--border)"}`,
+                      padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
+                      transition: "border-color 0.12s",
                     }}>
-                      {chip}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={image} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      {on && (
+                        <div style={{
+                          position: "absolute", top: "6px", right: "6px",
+                          width: "20px", height: "20px", borderRadius: "50%",
+                          background: "#c9a96e", display: "flex", alignItems: "center", justifyContent: "center",
+                        }}>
+                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                            <path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      )}
                     </button>
                   );
                 })}
+              </div>
+
+              {/* Skip for now */}
+              <div style={{ textAlign: "center", marginBottom: "24px" }}>
+                <button
+                  onClick={() => { setStyles([]); setScreen(s => s + 1); }}
+                  style={{ background: "none", border: "none", fontSize: "13px", color: "#bbb", cursor: "pointer", padding: "4px 8px" }}
+                >
+                  Skip for now
+                </button>
               </div>
 
               {/* 2 — Free-text description */}
