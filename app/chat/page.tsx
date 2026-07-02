@@ -512,6 +512,7 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
           background: msg.role === "user" ? "#000" : "#f0ede8",
           color:      msg.role === "user" ? "#fff" : "#000",
           fontSize: "15px", lineHeight: 1.55,
+          userSelect: msg.role === "assistant" ? "text" : undefined,
         }}>
           {msg.content}
         </div>
