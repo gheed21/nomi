@@ -267,7 +267,7 @@ export default function ChatPage() {
               </div>
 
               {/* Messages */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px", userSelect: "text" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {messages.map((msg, i) => (
                     <MessageBubble key={i} msg={msg} />
@@ -392,7 +392,7 @@ export default function ChatPage() {
                 </p>
               </div>
 
-              <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px", userSelect: "text" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
                   {selectedConv.messages.map((msg, i) => (
                     <MessageBubble key={i} msg={msg} />
@@ -513,6 +513,8 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
           color:      msg.role === "user" ? "#fff" : "#000",
           fontSize: "15px", lineHeight: 1.55,
           userSelect: msg.role === "assistant" ? "text" : undefined,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(msg.role === "assistant" && { WebkitUserSelect: "text", WebkitTouchCallout: "default" } as any),
         }}>
           {msg.content}
         </div>
