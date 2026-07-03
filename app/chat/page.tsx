@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import NomiNav from "../components/NomiNav";
 import { extractStoreLinks, StoreLink } from "../lib/storeSearch";
 
@@ -455,6 +455,61 @@ function ChipThumbnail({ src }: { src: string }) {
   );
 }
 
+// Splices verified product links inline into the message text.
+// chip.item is a verbatim substring of the text (extracted by extractStoreLinks),
+// so indexOf finds it reliably. When a chip.item appears multiple times we prefer
+// the occurrence nearest to the store name mention.
+function renderWithLinks(text: string, chips: StoreLink[]): ReactNode {
+  type Span = { start: number; end: number; href: string };
+  const spans: Span[] = [];
+  const lower = text.toLowerCase();
+
+  for (const chip of chips) {
+    const href = chip.productLink ?? chip.url;
+    const needle = chip.item.toLowerCase();
+    const storeIdx = lower.indexOf(chip.displayName.toLowerCase());
+
+    // Collect all positions where this item phrase appears
+    const hits: number[] = [];
+    let i = 0;
+    while ((i = lower.indexOf(needle, i)) !== -1) { hits.push(i); i += needle.length; }
+    if (!hits.length) continue;
+
+    // Prefer the hit closest to the store mention
+    const best = storeIdx === -1
+      ? hits[0]
+      : hits.reduce((a, b) => Math.abs(a - storeIdx) <= Math.abs(b - storeIdx) ? a : b);
+
+    spans.push({ start: best, end: best + chip.item.length, href });
+  }
+
+  if (!spans.length) return text;
+
+  // Sort then remove overlaps (first span wins)
+  spans.sort((a, b) => a.start - b.start);
+  const kept: Span[] = [];
+  let cursor = 0;
+  for (const s of spans) {
+    if (s.start >= cursor) { kept.push(s); cursor = s.end; }
+  }
+
+  // Build React node array: plain text segments interleaved with <a> elements
+  const nodes: ReactNode[] = [];
+  let pos = 0;
+  for (const { start, end, href } of kept) {
+    if (start > pos) nodes.push(text.slice(pos, start));
+    nodes.push(
+      <a key={start} href={href} target="_blank" rel="noopener noreferrer"
+        style={{ color: "#c9a96e", textDecoration: "underline", textDecorationColor: "#c9a96e" }}>
+        {text.slice(start, end)}
+      </a>
+    );
+    pos = end;
+  }
+  if (pos < text.length) nodes.push(text.slice(pos));
+  return <>{nodes}</>;
+}
+
 function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: string } }) {
   const allLinks = useMemo(
     () => msg.role === "assistant" ? extractStoreLinks(msg.content) : [],
@@ -490,7 +545,10 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
           .map((l, i) => {
             const e = results[i];
             if (!e?.verified) return null; // unverified → suppress entirely
-            return e.image ? { ...l, image: e.image, productLink: e.productLink } : l;
+            const enriched: StoreLink = { ...l };
+            if (e.image)       enriched.image       = e.image;
+            if (e.productLink) enriched.productLink = e.productLink;
+            return enriched;
           })
           .filter((l): l is StoreLink => l !== null);
         setVerifiedLinks(kept);
@@ -516,7 +574,9 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(msg.role === "assistant" && { WebkitUserSelect: "text", WebkitTouchCallout: "default" } as any),
         }}>
-          {msg.content}
+          {verifiedLinks?.length
+            ? renderWithLinks(msg.content, verifiedLinks.filter(l => l.item && (l.productLink || l.url)))
+            : msg.content}
         </div>
         {links.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
