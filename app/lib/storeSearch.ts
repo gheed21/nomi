@@ -38,6 +38,9 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   // ── Value / teen ──────────────────────────────────────────────────────────
   "prettylittlething": q => `https://us.prettylittlething.com/search?q=${q}`,
   "princess polly":    q => `https://www.princesspolly.com/pages/search-results-page?q=${q}`,
+  // ── Department / multi-brand ─────────────────────────────────────────────
+  "dsw":              q => `https://www.dsw.com/en/us/search?q=${q}`,
+  "amazon":           q => `https://www.amazon.com/s?k=${q}`,
   // ── Secondhand ────────────────────────────────────────────────────────────
   "depop":             q => `https://www.depop.com/search/?q=${q}`,
   "vinted":            q => `https://www.vinted.com/catalog?search_text=${q}`,
@@ -76,6 +79,8 @@ const STORE_DISPLAY: Record<string, string> = {
   "net-a-porter":      "Net-A-Porter",
   "prettylittlething": "PrettyLittleThing",
   "princess polly":    "Princess Polly",
+  "dsw":              "DSW",
+  "amazon":           "Amazon",
   "depop":             "Depop",
   "vinted":            "Vinted",
   "poshmark":          "Poshmark",
@@ -179,7 +184,7 @@ const FILLER_LEFT = new Set([
   "love","like","want","need","use","see","think","consider","suggest","recommend",
   "worn","styled","layered","matched","finish","complete","round","top",
   // particles & prepositions that prefix item phrases
-  "up","out","on","for","of","about","with","to",
+  "up","out","on","for","from","of","about","with","to",
   // gerunds that appear before "at/from [store]" but aren't products
   "shopping","browsing","wearing","looking","buying","finding",
   // generic adjectives that aren't distinctive product descriptors
@@ -212,7 +217,8 @@ const SKIP_INTRO_VERBS = new Set([
 function stripFillerLeft(phrase: string): string {
   const words = phrase.trim().split(/\s+/);
   let i = 0;
-  while (i < words.length && FILLER_LEFT.has(words[i].toLowerCase().replace(/[^a-z]/g, ""))) i++;
+  // Split on first non-alpha char so contractions like "I'd" → "i" hit the filler set
+  while (i < words.length && FILLER_LEFT.has(words[i].toLowerCase().split(/[^a-z]/)[0])) i++;
   return words.slice(i).join(" ");
 }
 
@@ -262,9 +268,11 @@ export function extractStoreLinks(text: string): StoreLink[] {
         /(?:^|[\s,])([A-Za-z][A-Za-z0-9''\- ]{2,50}?)\s+(?:from|at|by)\s*$/i
       );
       if (preMatch) {
-        // Split on commas and take the last clause — handles "if you want activewear,
-        // the Align leggings from Lululemon" capturing "activewear, the Align leggings"
-        const lastClause = preMatch[1].trim().split(/,\s*|\s+or\s+/i).pop() ?? "";
+        // Take the last 6 words of the capture, then split on internal conjunctions/
+        // prepositions so "Zara and some straight-leg jeans from H&M" → "straight-leg jeans".
+        const captureWords = preMatch[1].trim().split(/\s+/);
+        const last6        = captureWords.slice(-6).join(" ");
+        const lastClause   = last6.split(/\s+(?:and|or|but|from|at|by)\s+/i).pop() ?? last6;
         item = stripStopRight(stripFillerLeft(lastClause));
       }
 
@@ -272,7 +280,7 @@ export function extractStoreLinks(text: string): StoreLink[] {
       // Word-based: take next words, stop at STOP_AFTER words or punctuation.
       // Skip a leading intro verb ("Zara has/sells/carries [item]") before scanning.
       if (!item) {
-        const raw   = after.replace(/^'s\s*/, "").trimStart();
+        const raw   = after.replace(/^'s\s*/, "").trimStart().split(",")[0]; // clip at comma
         const words = raw.split(/\s+/).slice(0, 8);
         // Skip intro verb ("has", "sells" …) then any leading articles ("a", "an", "the")
         // so "has a great linen shirt" → scan starts at "great linen shirt"
