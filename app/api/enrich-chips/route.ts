@@ -31,7 +31,24 @@ function itemAppearsInTitle(item: string, title: string): boolean {
   return contentWords.some(w => t.includes(w));
 }
 
-async function verifyChip(item: string, store: string): Promise<EnrichResult> {
+// HEAD-checks a product URL before surfacing it. Returns the productLink if
+// live, or falls back to the store's own search URL if the link is dead (404,
+// 403, network error, or timeout). 3s timeout so happy-path adds minimal latency.
+async function checkLink(productLink: string | null, searchUrl: string): Promise<string | null> {
+  if (!productLink) return null;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 3000);
+  try {
+    const res = await fetch(productLink, { method: "HEAD", signal: ctrl.signal, redirect: "follow" });
+    clearTimeout(timer);
+    return res.ok ? productLink : searchUrl;
+  } catch {
+    clearTimeout(timer);
+    return searchUrl;
+  }
+}
+
+async function verifyChip(item: string, store: string, searchUrl: string): Promise<EnrichResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
 
@@ -51,10 +68,12 @@ async function verifyChip(item: string, store: string): Promise<EnrichResult> {
       const storeMatch = storeNorm.length >= 2 && sourceNorm.includes(storeNorm);
       const titleMatch = itemAppearsInTitle(item, r.title ?? "");
       if (storeMatch && titleMatch) {
+        const rawLink = r.link ?? r.product_link ?? null;
+        const productLink = await checkLink(rawLink, searchUrl);
         return {
           verified:    true,
           image:       r.thumbnail ?? null,
-          productLink: r.link ?? r.product_link ?? null,
+          productLink,
         };
       }
     }
@@ -67,7 +86,7 @@ async function verifyChip(item: string, store: string): Promise<EnrichResult> {
 
 export async function POST(req: NextRequest) {
   try {
-    const { chips } = await req.json() as { chips: { item: string; store: string }[] };
+    const { chips } = await req.json() as { chips: { item: string; store: string; searchUrl?: string }[] };
     if (!Array.isArray(chips) || !chips.length) {
       return NextResponse.json({ results: [] });
     }
@@ -79,7 +98,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const settled = await Promise.allSettled(chips.map(c => verifyChip(c.item, c.store)));
+    const settled = await Promise.allSettled(chips.map(c => verifyChip(c.item, c.store, c.searchUrl ?? "")));
     const results: EnrichResult[] = settled.map(r =>
       r.status === "fulfilled" ? r.value : { verified: false, image: null, productLink: null },
     );

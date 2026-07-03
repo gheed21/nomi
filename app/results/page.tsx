@@ -908,18 +908,25 @@ export default function ResultsPage() {
       )}
 
       {/* Share to Explore */}
-      {shareOpen && result && (
-        <ShareToExploreModal
-          images={[image, ...result.matches.map(m => m.image ?? undefined)].filter(Boolean) as string[]}
-          pieces={result.matches.map(m => ({ name: m.name, store: m.store, price: m.price, searchUrl: m.searchUrl, category: m.category }))}
-          onClose={() => setShareOpen(false)}
-          onShared={() => {
-            setShareOpen(false);
-            setShareConfirmed(true);
-            setTimeout(() => setShareConfirmed(false), 2500);
-          }}
-        />
-      )}
+      {shareOpen && result && (() => {
+        const sharePairs = [
+          { img: image, tier: "confident" as const },
+          ...result.matches.map(m => ({ img: m.image ?? undefined, tier: (m.imageTier ?? "confident") as "confident" | "broad" })),
+        ].filter(p => !!p.img);
+        return (
+          <ShareToExploreModal
+            images={sharePairs.map(p => p.img as string)}
+            tiers={sharePairs.map(p => p.tier)}
+            pieces={result.matches.map(m => ({ name: m.name, store: m.store, price: m.price, searchUrl: m.searchUrl, category: m.category }))}
+            onClose={() => setShareOpen(false)}
+            onShared={() => {
+              setShareOpen(false);
+              setShareConfirmed(true);
+              setTimeout(() => setShareConfirmed(false), 2500);
+            }}
+          />
+        );
+      })()}
 
       {shareConfirmed && (
         <div style={{ position: "fixed", bottom: "90px", left: "50%", transform: "translateX(-50%)", background: "#000", color: "#fff", fontSize: "13px", fontWeight: 500, padding: "10px 20px", borderRadius: "99px", zIndex: 400, whiteSpace: "nowrap", pointerEvents: "none" }}>

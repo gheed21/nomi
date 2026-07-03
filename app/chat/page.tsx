@@ -536,7 +536,7 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
     fetch("/api/enrich-chips", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chips: toVerify.map(l => ({ item: l.item, store: l.displayName })) }),
+      body: JSON.stringify({ chips: toVerify.map(l => ({ item: l.item, store: l.displayName, searchUrl: l.url })) }),
     })
       .then(r => r.json())
       .then(({ results }: { results: { verified: boolean; image: string | null; productLink: string | null }[] }) => {
