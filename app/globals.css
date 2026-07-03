@@ -33,7 +33,8 @@ textarea:focus {
 }
 
 ::selection {
-  background: var(--accent-light);
+  background: #C9A96E40;
+  color: var(--fg);
 }
 
 /* ── Dual range slider ─────────────────────────────────────────────────────── */
