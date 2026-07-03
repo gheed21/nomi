@@ -230,7 +230,7 @@ export default function ChatPage() {
 
   return (
     <>
-      <div style={{ position: "fixed", inset: 0, background: "#fff", display: "flex", justifyContent: "center" }}>
+      <div style={{ height: "100svh", overflow: "hidden", background: "#fff", display: "flex", justifyContent: "center" }}>
         <div style={{ width: "100%", maxWidth: "420px", height: "100%", display: "flex", flexDirection: "column", paddingBottom: "64px" }}>
 
           {/* ── Chat view ── */}
