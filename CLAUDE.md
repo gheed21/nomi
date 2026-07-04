@@ -52,4 +52,4 @@ General
 
 ## SMEs
 
-At the start of every session, read .claude/smes/fashion-stores/SME.md before making any store recommendations, updating storeSearch.ts, or modifying the Ask Nomi system prompt.
+At the start of every session, read claude/smes/fashion-stores/SME.md before making any store recommendations, updating storeSearch.ts, or modifying the Ask Nomi system prompt.
