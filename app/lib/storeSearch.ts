@@ -194,6 +194,7 @@ const FILLER_LEFT = new Set([
   "the","a","an","this","that","these","those","one","own","very",
   // intensifiers & fillers
   "really","very","so","quite","super","truly","also","even","just","any","either","neither",
+  "especially","particularly","specifically","mainly","mostly","definitely",
 ]);
 
 // Words that mark where a post-store item phrase ends.
