@@ -41,7 +41,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   // ── Shoes / accessories ───────────────────────────────────────────────────
   "steve madden":      q => `https://www.stevemadden.com/search?q=${q}`,
   // ── Jewelry ───────────────────────────────────────────────────────────────
-  "mejuri":            q => `https://mejuri.com/search?q=${q}`,
   // ── Activewear ────────────────────────────────────────────────────────────
   "alo yoga":          q => `https://www.aloyoga.com/search?q=${q}`,
   "gymshark":          q => `https://www.gymshark.com/search?q=${q}`,
@@ -87,7 +86,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "amazon":           "Amazon",
   "ann taylor":        "Ann Taylor",
   "steve madden":      "Steve Madden",
-  "mejuri":            "Mejuri",
   "alo yoga":          "Alo Yoga",
   "gymshark":          "Gymshark",
   "vuori":             "Vuori",
