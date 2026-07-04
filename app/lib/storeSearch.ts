@@ -242,6 +242,7 @@ function isPlausibleItem(s: string): boolean {
   const TOO_GENERIC = new Set([
     "clothes","clothing","stuff","items","things","pieces","options","looks","styles",
     "fits","outfits","outfit","something","com","inventory","selection","stock","ones","range",
+    "them","these","those","it","one","some","any",
   ]);
   if (words.some(w => TOO_GENERIC.has(w.toLowerCase().replace(/[^a-z]/g, "")))) return false;
   return /^[A-Za-z]/.test(s);
