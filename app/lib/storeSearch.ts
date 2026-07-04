@@ -1,6 +1,6 @@
 export const STORE_SEARCH: Record<string, (q: string) => string> = {
   // ── Mainstream / fast fashion ──────────────────────────────────────────────
-  "asos":              q => `https://www.asos.com/search/?q=${q}`,
+  "asos":              q => `https://www.asos.com/us/search/?q=${q}`,
   "zara":              q => `https://www.zara.com/us/en/search?searchTerm=${q}`,
   "h&m":               q => `https://www2.hm.com/en_us/search-results.html?q=${q}`,
   "mango":             q => `https://shop.mango.com/us/search?query=${q}`,
@@ -10,37 +10,46 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "urban outfitters":  q => `https://www.urbanoutfitters.com/search?q=${q}`,
   "free people":       q => `https://www.freepeople.com/search/?q=${q}`,
   "anthropologie":     q => `https://www.anthropologie.com/search?q=${q}`,
-  "madewell":          q => `https://www.madewell.com/search.html#q=${q}`,
+  "madewell":          q => `https://www.madewell.com/search.html?q=${q}`,
   "everlane":          q => `https://www.everlane.com/search?query=${q}`,
   "uniqlo":            q => `https://www.uniqlo.com/us/en/search?q=${q}`,
   "& other stories":   q => `https://www.stories.com/en_usd/search.html?q=${q}`,
   // ── Workwear / classic ────────────────────────────────────────────────────
-  "banana republic":   q => `https://bananarepublic.gap.com/browse/search.do?searchString=${q}`,
+  "banana republic":   q => `https://bananarepublic.gap.com/browse/search.do?searchText=${q}`,
   "old navy":          q => `https://oldnavy.gap.com/browse/search.do?searchString=${q}`,
   "ralph lauren":      q => `https://www.ralphlauren.com/search?q=${q}`,
   // ── Premium denim ─────────────────────────────────────────────────────────
   "ag jeans":          q => `https://www.agjeans.com/search?q=${q}`,
   // ── Activewear ────────────────────────────────────────────────────────────
-  "lululemon":         q => `https://shop.lululemon.com/search?q=${q}`,
   "athleta":           q => `https://athleta.gap.com/browse/search.do?searchString=${q}`,
   // ── Ultra-premium / luxury (search URLs verified via Node fetch) ──────────
   "toteme":            q => `https://toteme.com/search?q=${q}`,
   "totème":            q => `https://toteme.com/search?q=${q}`,
-  "loro piana":        q => `https://us.loropiana.com/en/search?q=${q}`,
   "bottega veneta":    q => `https://www.bottegaveneta.com/en-us/search?q=${q}`,
   "bottega":           q => `https://www.bottegaveneta.com/en-us/search?q=${q}`,
   // ── Elevated / designer ───────────────────────────────────────────────────
-  "revolve":           q => `https://www.revolve.com/r/Search.jsp?q=${q}`,
   "reformation":       q => `https://www.thereformation.com/search?query=${q}`,
   "nordstrom":         q => `https://www.nordstrom.com/sr?origin=keywordsearch&keyword=${q}`,
   "allsaints":         q => `https://www.allsaints.com/us/en/search?q=${q}`,
   "net-a-porter":      q => `https://www.net-a-porter.com/en-us/shop/search?q=${q}`,
   // ── Value / teen ──────────────────────────────────────────────────────────
-  "prettylittlething": q => `https://us.prettylittlething.com/search?q=${q}`,
-  "princess polly":    q => `https://www.princesspolly.com/pages/search-results-page?q=${q}`,
+  "prettylittlething": q => `https://www.prettylittlething.com/search?q=${q}`,
+  "forever 21":        q => `https://www.forever21.com/search?q=${q}`,
   // ── Department / multi-brand ─────────────────────────────────────────────
-  "dsw":              q => `https://www.dsw.com/en/us/search?searchtext=${q}`,
+  "dsw":              q => `https://www.dsw.com/search?searchtext=${q}`,
   "amazon":           q => `https://www.amazon.com/s?k=${q}`,
+  "ann taylor":        q => `https://www.anntaylor.com/search?q=${q}`,
+  // ── Shoes / accessories ───────────────────────────────────────────────────
+  "steve madden":      q => `https://www.stevemadden.com/search?q=${q}`,
+  // ── Jewelry ───────────────────────────────────────────────────────────────
+  "mejuri":            q => `https://mejuri.com/search?q=${q}`,
+  // ── Activewear ────────────────────────────────────────────────────────────
+  "alo yoga":          q => `https://www.aloyoga.com/search?q=${q}`,
+  "gymshark":          q => `https://www.gymshark.com/search?q=${q}`,
+  "vuori":             q => `https://www.vuoriclothing.com/search?q=${q}`,
+  "nike":              q => `https://www.nike.com/w?q=${q}`,
+  // ── Global / lifestyle ────────────────────────────────────────────────────
+  "farm rio":          q => `https://www.farmrio.com/search?q=${q}`,
   // ── Secondhand ────────────────────────────────────────────────────────────
   "depop":             q => `https://www.depop.com/search/?q=${q}`,
   "vinted":            q => `https://www.vinted.com/catalog?search_text=${q}`,
@@ -65,22 +74,27 @@ const STORE_DISPLAY: Record<string, string> = {
   "old navy":          "Old Navy",
   "ralph lauren":      "Ralph Lauren",
   "ag jeans":          "AG Jeans",
-  "lululemon":         "Lululemon",
   "athleta":           "Athleta",
   "toteme":            "Totème",
   "totème":            "Totème",
-  "loro piana":        "Loro Piana",
   "bottega veneta":    "Bottega Veneta",
   "bottega":           "Bottega Veneta",
-  "revolve":           "Revolve",
   "reformation":       "Reformation",
   "nordstrom":         "Nordstrom",
   "allsaints":         "AllSaints",
   "net-a-porter":      "Net-A-Porter",
   "prettylittlething": "PrettyLittleThing",
-  "princess polly":    "Princess Polly",
+  "forever 21":        "Forever 21",
   "dsw":              "DSW",
   "amazon":           "Amazon",
+  "ann taylor":        "Ann Taylor",
+  "steve madden":      "Steve Madden",
+  "mejuri":            "Mejuri",
+  "alo yoga":          "Alo Yoga",
+  "gymshark":          "Gymshark",
+  "vuori":             "Vuori",
+  "nike":              "Nike",
+  "farm rio":          "Farm Rio",
   "depop":             "Depop",
   "vinted":            "Vinted",
   "poshmark":          "Poshmark",
@@ -90,7 +104,10 @@ const STORE_DISPLAY: Record<string, string> = {
 // Matched case-insensitively; chips link to a plain Google web search instead.
 const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // ── Luxury / designer ─────────────────────────────────────────────────────
-  // toteme / loro piana / bottega veneta — moved to STORE_SEARCH (search URLs verified)
+  // toteme / bottega veneta — moved to STORE_SEARCH (search URLs verified)
+  // lululemon / loro piana — ERR_HTTP2_PROTOCOL_ERROR on all subdomains, fallback to Google
+  { key: "lululemon",    displayName: "Lululemon"   },
+  { key: "loro piana",   displayName: "Loro Piana"  },
   { key: "max mara",       displayName: "Max Mara"        },
   { key: "polene",         displayName: "Polène"          },
   { key: "polène",         displayName: "Polène"          },
@@ -119,39 +136,32 @@ const FALLBACK_STORES: { key: string; displayName: string }[] = [
   { key: "sezane",         displayName: "Sézane"          },
   { key: "sézane",         displayName: "Sézane"          },
   { key: "ami paris",      displayName: "Ami Paris"       },
-  { key: "farm rio",       displayName: "Farm Rio"        },
   { key: "reiss",          displayName: "Reiss"           },
   { key: "massimo dutti", displayName: "Massimo Dutti"  },
   { key: "arket",         displayName: "Arket"           },
   // ── Mid-market gaps ───────────────────────────────────────────────────────
   { key: "j.crew",         displayName: "J.Crew"          },
   { key: "american eagle", displayName: "American Eagle"  },
-  { key: "forever 21",     displayName: "Forever 21"      },
+  { key: "revolve",        displayName: "Revolve"         },
+  { key: "princess polly", displayName: "Princess Polly" },
   { key: "hollister",      displayName: "Hollister"       },
   { key: "express",        displayName: "Express"         },
-  { key: "ann taylor",     displayName: "Ann Taylor"      },
   { key: "shein",          displayName: "Shein"           },
   // "cos" omitted — 3 chars, matches inside "costs", "because", etc.
   { key: "aritzia",        displayName: "Aritzia"         },
   { key: "spanx",          displayName: "Spanx"           },
   // ── Activewear ────────────────────────────────────────────────────────────
-  { key: "alo yoga",       displayName: "Alo Yoga"        },
-  { key: "vuori",          displayName: "Vuori"           },
   { key: "outdoor voices", displayName: "Outdoor Voices"  },
-  { key: "gymshark",       displayName: "Gymshark"        },
-  { key: "nike",           displayName: "Nike"            },
   { key: "adidas",         displayName: "Adidas"          },
   { key: "sweaty betty",   displayName: "Sweaty Betty"    },
   // ── Shoes / accessories ───────────────────────────────────────────────────
   { key: "new balance",    displayName: "New Balance"     },
   { key: "sam edelman",    displayName: "Sam Edelman"     },
-  { key: "steve madden",   displayName: "Steve Madden"    },
   { key: "birkenstock",    displayName: "Birkenstock"     },
   { key: "converse",       displayName: "Converse"        },
   { key: "sperry",         displayName: "Sperry"          },
   { key: "vans",           displayName: "Vans"            },
   // ── Jewelry ───────────────────────────────────────────────────────────────
-  { key: "mejuri",         displayName: "Mejuri"          },
   { key: "gorjana",        displayName: "Gorjana"         },
   // ── Denim ─────────────────────────────────────────────────────────────────
   { key: "levis",          displayName: "Levi's"          },
@@ -206,7 +216,7 @@ const STOP_AFTER = new Set([
   "hits","takes","makes","gets","keeps","sets","puts","feels","reads","pulls",
   "wins","beats","excels","usually","typically","often","currently","actually","tend","seem","almost","always",
   "so","if","they","their","price","moment","angle","vibe","aesthetic","approach",
-  "right","now","without","—","–",
+  "right","now","without","try","skip","check","find","look","—","–",
 ]);
 
 // Intro verbs that connect a store to an item ("Zara has/sells/carries [item]").
@@ -290,7 +300,7 @@ export function extractStoreLinks(text: string): StoreLink[] {
       // Word-based: take next words, stop at STOP_AFTER words or punctuation.
       // Skip a leading intro verb ("Zara has/sells/carries [item]") before scanning.
       if (!item) {
-        const raw   = after.replace(/^'s\s*/, "").trimStart().split(",")[0]; // clip at comma
+        const raw   = after.replace(/^'s\s*/, "").trimStart().split(/[,!?]/)[0]; // clip at comma/punctuation
         const words = raw.split(/\s+/).slice(0, 8);
         // Skip intro verb ("has", "sells" …) then any leading articles ("a", "an", "the")
         // so "has a great linen shirt" → scan starts at "great linen shirt"
@@ -350,7 +360,7 @@ export function extractStoreLinks(text: string): StoreLink[] {
       }
 
       if (!item) {
-        const raw   = after.replace(/^'s\s*/, "").trimStart();
+        const raw   = after.replace(/^'s\s*/, "").trimStart().split(/[,!?]/)[0]; // clip at comma/punctuation
         const words = raw.split(/\s+/).slice(0, 8);
         let offset  = (words.length > 0 && (SKIP_INTRO_VERBS.has(words[0].toLowerCase()) || words[0].toLowerCase() === "for")) ? 1 : 0;
         while (offset < words.length && /^(a|an|the|their)$/i.test(words[offset])) offset++;
