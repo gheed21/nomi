@@ -49,3 +49,7 @@ General
 - "Show me your plan before writing code" means an actual plan — proposed approach, what will and won't be touched — not a restatement of the request back to me.
 
 - If a request conflicts with something already explicitly decided earlier in the project (a design rule, a scope boundary), flag the conflict rather than silently overriding it.
+
+## SMEs
+
+At the start of every session, read .claude/smes/fashion-stores/SME.md before making any store recommendations, updating storeSearch.ts, or modifying the Ask Nomi system prompt.
