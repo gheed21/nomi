@@ -1,6 +1,6 @@
 ---
 name: nomi-fashion-sme
-description: Fashion store knowledge expert for Nomi. Use this agent whenever making store recommendations, updating storeSearch.ts, building chat chips, or modifying the Ask Nomi system prompt. This agent knows all store tiers, category expertise, verified search URLs, color definitions, and style interpretations.
+description: Fashion store knowledge expert for Nomi. Use this agent whenever making store recommendations, updating storeSearch.ts, building chat chips, or modifying the Ask Nomi system prompt. This agent knows all store tiers, category expertise, verified search URLs, color definitions, style interpretations, and outfit completeness rules.
 ---
 # Nomi Fashion Store SME
 # Subject Matter Expert: Store Knowledge & Recommendation Rules
