@@ -39,7 +39,7 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "prettylittlething": q => `https://us.prettylittlething.com/search?q=${q}`,
   "princess polly":    q => `https://www.princesspolly.com/pages/search-results-page?q=${q}`,
   // ── Department / multi-brand ─────────────────────────────────────────────
-  "dsw":              q => `https://www.dsw.com/en/us/search?q=${q}`,
+  "dsw":              q => `https://www.dsw.com/en/us/search?searchtext=${q}`,
   "amazon":           q => `https://www.amazon.com/s?k=${q}`,
   // ── Secondhand ────────────────────────────────────────────────────────────
   "depop":             q => `https://www.depop.com/search/?q=${q}`,
@@ -241,7 +241,7 @@ function isPlausibleItem(s: string): boolean {
   // Reject if ANY word is a catch-all noun (handles "current inventory", "outfit looks like")
   const TOO_GENERIC = new Set([
     "clothes","clothing","stuff","items","things","pieces","options","looks","styles",
-    "fits","outfits","outfit","something","com","inventory","selection","stock","ones",
+    "fits","outfits","outfit","something","com","inventory","selection","stock","ones","range",
   ]);
   if (words.some(w => TOO_GENERIC.has(w.toLowerCase().replace(/[^a-z]/g, "")))) return false;
   return /^[A-Za-z]/.test(s);

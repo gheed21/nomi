@@ -574,8 +574,8 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
           ...(msg.role === "assistant" && { WebkitUserSelect: "text", WebkitTouchCallout: "default" } as any),
         }}>
           {verifiedLinks?.length
-            ? renderWithLinks(msg.content, verifiedLinks.filter(l => l.item && (l.productLink || l.url)))
-            : msg.content}
+            ? renderWithLinks(msg.content.replace(/\s*\[[^\]]{3,40}\]/g, ""), verifiedLinks.filter(l => l.item && (l.productLink || l.url)))
+            : msg.content.replace(/\s*\[[^\]]{3,40}\]/g, "")}
         </div>
         {links.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -597,7 +597,7 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
                 }}
               >
                 {link.image && <ChipThumbnail src={link.image} />}
-                {link.item ? `${link.item} at ${link.displayName}` : `Shop at ${link.displayName}`} →
+                {link.item ? `${link.item.replace(/\s*\[.*/, "")} at ${link.displayName}` : `Shop at ${link.displayName}`} →
               </a>
             ))}
           </div>
