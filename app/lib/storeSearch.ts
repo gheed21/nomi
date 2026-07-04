@@ -263,12 +263,20 @@ export function extractStoreLinks(text: string): StoreLink[] {
 
       let item = "";
 
+      // Bracketed search term — highest priority. Nomi is instructed to always
+      // append [search term] after store mentions, e.g. "sandals at ASOS [black strappy sandals]".
+      // Check after the store first, then before (handles both word orders).
+      const bracketAfter  = after.match(/^\s*\[([^\]]{3,40})\]/);
+      const bracketBefore = before.match(/\[([^\]]{3,40})\]\s+(?:at|from|by)\s*$/i);
+      if (bracketAfter)  item = bracketAfter[1].trim();
+      else if (bracketBefore) item = bracketBefore[1].trim();
+
       // "[anything] from/at/by [store]" — capture everything before the preposition,
       // then strip leading filler left-to-right to isolate the actual noun phrase.
       const preMatch = before.match(
         /(?:^|[\s,])([A-Za-z][A-Za-z0-9''\- ]{2,50}?)\s+(?:from|at|by)\s*$/i
       );
-      if (preMatch) {
+      if (!item && preMatch) {
         // Take the last 6 words of the capture, then split on internal conjunctions/
         // prepositions so "Zara and some straight-leg jeans from H&M" → "straight-leg jeans".
         const captureWords = preMatch[1].trim().split(/\s+/);
@@ -327,10 +335,15 @@ export function extractStoreLinks(text: string): StoreLink[] {
 
       let item = "";
 
+      const bracketAfter2  = after.match(/^\s*\[([^\]]{3,40})\]/);
+      const bracketBefore2 = before.match(/\[([^\]]{3,40})\]\s+(?:at|from|by)\s*$/i);
+      if (bracketAfter2)  item = bracketAfter2[1].trim();
+      else if (bracketBefore2) item = bracketBefore2[1].trim();
+
       const preMatch = before.match(
         /(?:^|[\s,])([A-Za-z][A-Za-z0-9''\- ]{2,50}?)\s+(?:from|at|by)\s*$/i
       );
-      if (preMatch) {
+      if (!item && preMatch) {
         const lastClause = preMatch[1].trim().split(/,\s*|\s+or\s+/i).pop() ?? "";
         item = stripStopRight(stripFillerLeft(lastClause));
       }
