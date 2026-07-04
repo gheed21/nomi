@@ -136,8 +136,19 @@ export default function ChatPage() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [confirmDeleteId,  setConfirmDeleteId]  = useState<string | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const menuRef   = useRef<HTMLDivElement>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const menuRef     = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef<string>(
+    (() => {
+      try {
+        const stored = sessionStorage.getItem("nomi_session_id");
+        if (stored) return stored;
+        const id = uid();
+        sessionStorage.setItem("nomi_session_id", id);
+        return id;
+      } catch { return uid(); }
+    })()
+  );
 
   useEffect(() => {
     setConversations(JSON.parse(localStorage.getItem("nomi_conversations") ?? "[]"));
@@ -158,23 +169,25 @@ export default function ChatPage() {
     if (view === "chat") bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading, view]);
 
-  function saveCurrentConversation() {
-    const userMsg = messages.find(m => m.role === "user");
+  function upsertConversation(msgs: Message[]) {
+    const userMsg = msgs.find(m => m.role === "user");
     if (!userMsg) return;
     const conv: Conversation = {
-      id: uid(),
+      id: sessionIdRef.current,
       title: userMsg.content.slice(0, 60),
-      messages,
+      messages: msgs,
       savedAt: Date.now(),
     };
     const prev: Conversation[] = JSON.parse(localStorage.getItem("nomi_conversations") ?? "[]");
-    const next = [conv, ...prev];
+    const next = [conv, ...prev.filter(c => c.id !== sessionIdRef.current)];
     localStorage.setItem("nomi_conversations", JSON.stringify(next));
     setConversations(next);
   }
 
   function handleNewChat() {
-    saveCurrentConversation();
+    const id = uid();
+    sessionIdRef.current = id;
+    try { sessionStorage.setItem("nomi_session_id", id); } catch { /* ignore */ }
     setMessages([OPENING]);
     setSentFirst(false);
     setInput("");
@@ -183,6 +196,9 @@ export default function ChatPage() {
 
   function handleClearAll() {
     localStorage.removeItem("nomi_conversations");
+    const id = uid();
+    sessionIdRef.current = id;
+    try { sessionStorage.setItem("nomi_session_id", id); } catch { /* ignore */ }
     setConversations([]);
     setMessages([OPENING]);
     setSentFirst(false);
@@ -220,9 +236,15 @@ export default function ChatPage() {
         body: JSON.stringify({ messages: next, userContext: buildUserContext() || undefined }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: "assistant", content: data.text || "Something went wrong — try again." }]);
+      const assistantMsg: Message = { role: "assistant", content: data.text || "Something went wrong — try again." };
+      const completed = [...next, assistantMsg];
+      setMessages(completed);
+      upsertConversation(completed);
     } catch {
-      setMessages(prev => [...prev, { role: "assistant", content: "Something went wrong — try again." }]);
+      const errMsg: Message = { role: "assistant", content: "Something went wrong — try again." };
+      const completed = [...next, errMsg];
+      setMessages(completed);
+      upsertConversation(completed);
     } finally {
       setLoading(false);
     }
