@@ -36,7 +36,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "prettylittlething": q => `https://www.prettylittlething.com/search?q=${q}`,
   "forever 21":        q => `https://www.forever21.com/search?q=${q}`,
   // ── Department / multi-brand ─────────────────────────────────────────────
-  "dsw":              q => `https://www.dsw.com/search?searchtext=${q}`,
   "amazon":           q => `https://www.amazon.com/s?k=${q}`,
   "ann taylor":        q => `https://www.anntaylor.com/search?q=${q}`,
   // ── Shoes / accessories ───────────────────────────────────────────────────
@@ -85,7 +84,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "net-a-porter":      "Net-A-Porter",
   "prettylittlething": "PrettyLittleThing",
   "forever 21":        "Forever 21",
-  "dsw":              "DSW",
   "amazon":           "Amazon",
   "ann taylor":        "Ann Taylor",
   "steve madden":      "Steve Madden",
