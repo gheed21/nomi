@@ -544,10 +544,9 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
         const kept = toVerify
           .map((l, i) => {
             const e = results[i];
-            if (!e?.verified) return null; // unverified → suppress entirely
             const enriched: StoreLink = { ...l };
-            if (e.image)       enriched.image       = e.image;
-            if (e.productLink) enriched.productLink = e.productLink;
+            if (e?.image)       enriched.image       = e.image;
+            if (e?.productLink) enriched.productLink = e.productLink;
             return enriched;
           })
           .filter((l): l is StoreLink => l !== null);
@@ -598,10 +597,7 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
                 }}
               >
                 {link.image && <ChipThumbnail src={link.image} />}
-                {link.fallback
-                  ? (link.item ? `Search ${link.item} at ${link.displayName}` : `Search ${link.displayName}`)
-                  : (link.item ? `Shop ${link.item} at ${link.displayName}` : `Shop at ${link.displayName}`)
-                } →
+                {link.item ? `${link.item} at ${link.displayName}` : `Shop at ${link.displayName}`} →
               </a>
             ))}
           </div>

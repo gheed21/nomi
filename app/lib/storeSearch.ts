@@ -203,9 +203,9 @@ const STOP_AFTER = new Set([
   "has","have","do","does","did","run","runs","go","goes","sit","sits","which","that","fit","fits","holds",
   "comes","works","looks","shows","appears","tends","skews","leans","means",
   "hits","takes","makes","gets","keeps","sets","puts","feels","reads","pulls",
-  "wins","beats","excels","usually","typically","often","currently","actually",
+  "wins","beats","excels","usually","typically","often","currently","actually","tend","seem","almost","always",
   "so","if","they","their","price","moment","angle","vibe","aesthetic","approach",
-  "right","now","—","–",
+  "right","now","without","—","–",
 ]);
 
 // Intro verbs that connect a store to an item ("Zara has/sells/carries [item]").
@@ -284,12 +284,12 @@ export function extractStoreLinks(text: string): StoreLink[] {
         const words = raw.split(/\s+/).slice(0, 8);
         // Skip intro verb ("has", "sells" …) then any leading articles ("a", "an", "the")
         // so "has a great linen shirt" → scan starts at "great linen shirt"
-        let offset = words.length > 0 && SKIP_INTRO_VERBS.has(words[0].toLowerCase()) ? 1 : 0;
+        let offset = (words.length > 0 && (SKIP_INTRO_VERBS.has(words[0].toLowerCase()) || words[0].toLowerCase() === "for")) ? 1 : 0;
         while (offset < words.length && /^(a|an|the|their)$/i.test(words[offset])) offset++;
         const scan    = words.slice(offset);
         const stopIdx = scan.findIndex(w => STOP_AFTER.has(w.toLowerCase().replace(/[^a-z—–]/g, "")));
         const taken   = stopIdx === 0 ? [] : stopIdx > 0 ? scan.slice(0, stopIdx) : scan.slice(0, 4);
-        if (taken.length > 0) item = stripFillerLeft(taken.join(" "));
+        if (taken.length > 0) item = stripStopRight(stripFillerLeft(taken.join(" ")));
       }
 
       // Cap at 5 words, clean up punctuation, then validate
@@ -301,12 +301,14 @@ export function extractStoreLinks(text: string): StoreLink[] {
       if (item) item = item.replace(/^['''.,;:!?\-–—]+|['''.,;:!?\-–—]+$/g, "").trim();
       if (!isPlausibleItem(item)) item = "";
 
+      if (!item) continue; // no item = no useful search URL, skip the chip
+
       const displayName = STORE_DISPLAY[key] ?? key;
       const dedupKey = `${displayName}:${item.toLowerCase()}`;
       if (seen.has(dedupKey)) continue;
       seen.add(dedupKey);
 
-      const q = encodeURIComponent(item || key);
+      const q = encodeURIComponent(item);
       results.push({ displayName, item, url: builder(q) });
     }
   }
@@ -335,18 +337,20 @@ export function extractStoreLinks(text: string): StoreLink[] {
       if (!item) {
         const raw   = after.replace(/^'s\s*/, "").trimStart();
         const words = raw.split(/\s+/).slice(0, 8);
-        let offset  = words.length > 0 && SKIP_INTRO_VERBS.has(words[0].toLowerCase()) ? 1 : 0;
+        let offset  = (words.length > 0 && (SKIP_INTRO_VERBS.has(words[0].toLowerCase()) || words[0].toLowerCase() === "for")) ? 1 : 0;
         while (offset < words.length && /^(a|an|the|their)$/i.test(words[offset])) offset++;
         const scan    = words.slice(offset);
         const stopIdx = scan.findIndex(w => STOP_AFTER.has(w.toLowerCase().replace(/[^a-z—–]/g, "")));
         const taken   = stopIdx === 0 ? [] : stopIdx > 0 ? scan.slice(0, stopIdx) : scan.slice(0, 4);
-        if (taken.length > 0) item = stripFillerLeft(taken.join(" "));
+        if (taken.length > 0) item = stripStopRight(stripFillerLeft(taken.join(" ")));
       }
 
       if (item) item = item.split(/\s+/).slice(0, 5).join(" ");
       if (item) item = item.replace(/["""]/g, "").trim();
       if (item) item = item.replace(/^['''.,;:!?\-–—]+|['''.,;:!?\-–—]+$/g, "").trim();
       if (!isPlausibleItem(item)) item = "";
+
+      if (!item) continue; // no item = no useful search URL, skip the chip
 
       const dedupKey = `${displayName}:${item.toLowerCase()}`;
       if (seen.has(dedupKey)) continue;
