@@ -11,7 +11,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "free people":       q => `https://www.freepeople.com/search/?q=${q}`,
   "anthropologie":     q => `https://www.anthropologie.com/search?q=${q}`,
   "madewell":          q => `https://www.madewell.com/search.html?q=${q}`,
-  "everlane":          q => `https://www.everlane.com/search?query=${q}`,
   "uniqlo":            q => `https://www.uniqlo.com/us/en/search?q=${q}`,
   "& other stories":   q => `https://www.stories.com/en_usd/search.html?q=${q}`,
   // ── Workwear / classic ────────────────────────────────────────────────────
@@ -65,7 +64,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "free people":       "Free People",
   "anthropologie":     "Anthropologie",
   "madewell":          "Madewell",
-  "everlane":          "Everlane",
   "uniqlo":            "Uniqlo",
   "& other stories":   "& Other Stories",
   "banana republic":   "Banana Republic",
@@ -102,6 +100,8 @@ const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // ── Luxury / designer ─────────────────────────────────────────────────────
   // toteme / bottega veneta — moved to STORE_SEARCH (search URLs verified)
   // lululemon / loro piana — ERR_HTTP2_PROTOCOL_ERROR on all subdomains, fallback to Google
+  // everlane — search?query= URL doesn't populate results reliably, fallback to Google
+  { key: "everlane",     displayName: "Everlane"    },
   { key: "lululemon",    displayName: "Lululemon"   },
   { key: "loro piana",   displayName: "Loro Piana"  },
   { key: "max mara",       displayName: "Max Mara"        },

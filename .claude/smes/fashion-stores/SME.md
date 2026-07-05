@@ -189,7 +189,6 @@ Use these exact formats when building chip links. {query} = URL-encoded search t
 - Uniqlo: https://www.uniqlo.com/us/en/search?q={query}
 - COS: https://www.cosstores.com/en_usd/search.html?q={query}
 - Reformation: https://www.thereformation.com/search?q={query}
-- Everlane: https://www.everlane.com/search?query={query}
 - Aritzia: https://www.aritzia.com/us/en/search?q={query}
 - Nordstrom: https://www.nordstrom.com/sr?origin=keywordsearch&keyword={query}
 - Revolve: https://www.revolve.com/r/Search.jsp?q={query}
@@ -210,6 +209,7 @@ Use these exact formats when building chip links. {query} = URL-encoded search t
 
 ## Stores Without Reliable Search URLs (use Google fallback)
 These stores either block search URL patterns or require sessions:
+- Everlane — `/search?query=` matches their own form field name but results load client-side and don't reliably populate for direct/deep-linked URL loads (confirmed 2026-07-05); use Google fallback
 - Chanel, Hermès, Dior, Louis Vuitton, Prada, Gucci, Bottega Veneta, Celine, Loewe, Miu Miu, Fendi, Balenciaga, Valentino, Burberry, Saint Laurent, Moncler, Ferragamo, Jimmy Choo, Manolo Blahnik, Christian Louboutin — all luxury, link to brand site homepage or Google Shopping
 - The RealReal, Vestiaire Collective, Depop, Poshmark — use Google fallback with store name in query
 - Golden Goose, Veja, Birkenstock, Ganni, Jacquemus, Acne Studios, Sandy Liang, Toteme, Sézane, Missoma, Monica Vinader — verify URL format before adding to STORE_SEARCH
