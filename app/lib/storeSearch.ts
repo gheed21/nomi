@@ -3,7 +3,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "asos":              q => `https://www.asos.com/us/search/?q=${q}`,
   "zara":              q => `https://www.zara.com/us/en/search?searchTerm=${q}`,
   "h&m":               q => `https://www2.hm.com/en_us/search-results.html?q=${q}`,
-  "mango":             q => `https://shop.mango.com/us/search?query=${q}`,
   "target":            q => `https://www.target.com/s?searchTerm=${q}`,
   "abercrombie":       q => `https://www.abercrombie.com/shop/us/search-results?q=${q}`,
   // ── Mid-range / lifestyle ──────────────────────────────────────────────────
@@ -57,7 +56,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "asos":              "ASOS",
   "zara":              "Zara",
   "h&m":               "H&M",
-  "mango":             "Mango",
   "target":            "Target",
   "abercrombie":       "Abercrombie",
   "urban outfitters":  "Urban Outfitters",
@@ -102,6 +100,8 @@ const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // lululemon / loro piana — ERR_HTTP2_PROTOCOL_ERROR on all subdomains, fallback to Google
   // everlane — search?query= URL doesn't populate results reliably, fallback to Google
   { key: "everlane",     displayName: "Everlane"    },
+  // mango — old /us/search path now 404s; real path needs a gender segment (/us/en/search/women) we can't determine
+  { key: "mango",        displayName: "Mango"       },
   { key: "lululemon",    displayName: "Lululemon"   },
   { key: "loro piana",   displayName: "Loro Piana"  },
   { key: "max mara",       displayName: "Max Mara"        },

@@ -180,7 +180,6 @@ Use these exact formats when building chip links. {query} = URL-encoded search t
 - ASOS: https://www.asos.com/us/search/?q={query}
 - Zara: https://www.zara.com/us/en/search?searchTerm={query}
 - H&M: https://www2.hm.com/en_us/search-results.html?q={query}
-- Mango: https://shop.mango.com/us/search?query={query}
 - Anthropologie: https://www.anthropologie.com/search?q={query}
 - Free People: https://www.freepeople.com/search/?q={query}
 - Urban Outfitters: https://www.urbanoutfitters.com/search?q={query}
@@ -210,6 +209,7 @@ Use these exact formats when building chip links. {query} = URL-encoded search t
 ## Stores Without Reliable Search URLs (use Google fallback)
 These stores either block search URL patterns or require sessions:
 - Everlane — `/search?query=` matches their own form field name but results load client-side and don't reliably populate for direct/deep-linked URL loads (confirmed 2026-07-05); use Google fallback
+- Mango — old `/us/search?query=` path now 404s; the site restructured search under a gender-segmented path (`/us/en/search/women`, presumably `/men`) that we have no way to pick correctly; use Google fallback (confirmed 2026-07-05)
 - Chanel, Hermès, Dior, Louis Vuitton, Prada, Gucci, Bottega Veneta, Celine, Loewe, Miu Miu, Fendi, Balenciaga, Valentino, Burberry, Saint Laurent, Moncler, Ferragamo, Jimmy Choo, Manolo Blahnik, Christian Louboutin — all luxury, link to brand site homepage or Google Shopping
 - The RealReal, Vestiaire Collective, Depop, Poshmark — use Google fallback with store name in query
 - Golden Goose, Veja, Birkenstock, Ganni, Jacquemus, Acne Studios, Sandy Liang, Toteme, Sézane, Missoma, Monica Vinader — verify URL format before adding to STORE_SEARCH
@@ -472,6 +472,7 @@ Fabrics: silk, satin, crepe, wool, cashmere, linen
 Stores: Banana Republic, J.Crew, Massimo Dutti, COS, Toteme, Sézane, Ralph Lauren, Aritzia
 
 ### Nice / Put Together / Polished
+This is the DEFAULT read for a bare word like "nice" with no other signal — it is a guess, not a fixed rule. The word is genuinely ambiguous (could mean mid-range polished, or could mean expensive/luxury). Give this default, then invite the user to redirect toward luxury or budget in the same response — see route.ts system prompt rule on vague quality/price words.
 Same as Classy but slightly more relaxed — can include:
 Items: fitted knit top, straight-leg jean, loafer, ankle boot, tote bag, delicate jewelry
 Colors: neutral palette — cream, beige, camel, black, navy
