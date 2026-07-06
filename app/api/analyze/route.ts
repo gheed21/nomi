@@ -1,6 +1,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { STORE_SEARCH, FALLBACK_STORES } from "@/app/lib/storeSearch";
+import { getCategoryExpertise } from "@/app/lib/smeKnowledge";
+
+const categoryExpertiseSection = getCategoryExpertise()
+  ? `\nSTORE CATEGORY KNOWLEDGE (authoritative — a store listed as NOT carrying a category means never recommend it for that category, even if it fits the general vibe):\n${getCategoryExpertise()}\n`
+  : "";
 
 // ─── SerpAPI image enrichment ─────────────────────────────────────────────────
 
@@ -611,8 +616,9 @@ Return JSON only, no markdown:
 Store selection rules:
 - Only suggest stores that genuinely carry that item type at the stated price range. Never suggest luxury brands (Louis Vuitton, Gucci, Prada, Bottega) for items under $150.
 - Price tier mapping: $0–$60 → ASOS, Zara, H&M, Urban Outfitters, Mango, PrettyLittleThing, Princess Polly; $60–$150 → Anthropologie, Free People, Revolve, Nordstrom, Madewell, Reformation; $150–$400 → Saks, Bloomingdales, AllSaints, ba&sh, Veronica Beard; $400+ → Net-a-Porter, Matches, luxury department stores.
+- The price tier list above is a starting point only — always cross-check against the store category knowledge below before finalizing a store for a specific category.
 - Be specific: use the actual product line or style name when possible (e.g. "Levi's 501 Original" not "jeans").
-${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
+${categoryExpertiseSection}${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, a Google Shopping search URL, and a category field.
 
@@ -686,7 +692,7 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
 
   const exclusiveConstraint = detectExclusiveConstraint(filters);
 
-  const detailsInstruction = "If the uploaded piece has a standout, distinctive design detail beyond its basic silhouette — decorative hardware, charms, embellishments, appliqués, unusual trims or beading — call it out specifically in analysis.details. Leave analysis.details as an empty string for plain/basic pieces with nothing distinctive. When analysis.details is non-empty, that detail is the defining trait of the piece — prioritize suggesting items that share it, not just the base garment shape and color, and mention it explicitly in the reason for each match.";
+  const detailsInstruction = "If the uploaded piece has a standout, distinctive design detail beyond its basic silhouette — decorative hardware, charms, embellishments, appliqués, unusual trims or beading — call it out specifically in analysis.details. Leave analysis.details as an empty string for plain/basic pieces with nothing distinctive. When analysis.details is non-empty: at least one of the 3 suggestions must be a genuinely distinctive piece that itself has a similar special design twist — a real, specific item actually known for decorative hardware/charms/embellishment, not a plain version of the garment with the detail mentioned only in the reason text as an afterthought. The other 1-2 suggestions can be more classic, versatile alternatives without that same embellishment — they don't all need to match the detail, but at least one pick must genuinely have its own twist.";
 
   const scopeInstruction = scope !== "any"
     ? "Suggest exactly 3 similar items in the exact same category as the uploaded piece — same type of garment, similar silhouette, cut, and aesthetic, from different stores or brands."
@@ -696,11 +702,11 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
 
   return `${mandatorySection}${criticalConstraint}${exclusiveConstraint}You are Nomi, an expert fashion stylist. Analyze the clothing item in the image and identify its key style attributes: silhouette, neckline, cut, fabric, color, and overall aesthetic. ${scopeInstruction}
 ${detailsInstruction}
-${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
+${categoryExpertiseSection}${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each match also include a category field: exactly one of top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — describing the type of item suggested.
 
-Before you output the JSON: check the uploaded piece one more time for a standout, distinctive design detail (decorative hardware, charms, embellishments, appliqués, unusual trims or beading) beyond its basic silhouette. If one is present, it is the single most important thing to preserve in your 3 suggestions — every reason must name it specifically, not just describe the general garment shape and color.
+Before you output the JSON: check the uploaded piece one more time for a standout, distinctive design detail (decorative hardware, charms, embellishments, appliqués, unusual trims or beading) beyond its basic silhouette. If one is present, at least one of your 3 suggestions must be a genuinely distinctive item that itself has a similar twist — not a plain, generic item with the detail added to the reason text as an afterthought. That match's name and reason should make the specialness obvious, not just claim it.
 
 Return JSON only in this format:
 { "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string, "details": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
@@ -747,8 +753,9 @@ function buildTextSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | 
 Store selection rules:
 - Only suggest stores that genuinely carry that item type at the stated price range.
 - Price tier mapping: $0–$60 → ASOS, Zara, H&M, Urban Outfitters, Mango; $60–$150 → Anthropologie, Free People, Revolve, Nordstrom, Madewell, Reformation; $150–$400 → Saks, Bloomingdales, AllSaints, ba&sh; $400+ → Net-a-Porter, Matches.
+- The price tier list above is a starting point only — always cross-check against the store category knowledge below before finalizing a store for a specific category.
 - Be specific: use actual product line or style names when possible.
-${colorSection}${budgetSection}${categorySection}${secondhandSection}${tasteSection}${genderSection}${feedbackSection}
+${categoryExpertiseSection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, and a Google Shopping search URL.
 searchUrl format: https://www.google.com/search?tbm=shop&q=item+name+store+name
@@ -805,6 +812,28 @@ function inferCategoryFromAesthetic(aesthetic: string): string | null {
   if (t.includes("hoodie") || t.includes("sweatshirt") || t.includes("bodysuit") ||
       t.includes("turtleneck") || t.includes("blouse")) return "top";
   return null;
+}
+
+// Words too generic to prove a match's reason actually references the
+// standout detail (vs. just coincidentally sharing a common word).
+const DETAIL_STOP = new Set([
+  "the", "a", "an", "on", "at", "in", "of", "and", "or", "with", "from", "by", "to",
+  "small", "subtle", "standout", "distinctive", "decorative", "detail", "details",
+  "visible", "area", "corner", "piece", "accent", "touch", "plus",
+]);
+
+// Checks whether any meaningful word from analysis.details actually shows up
+// in the matches' reason text. Same content-word-overlap approach as
+// itemAppearsInTitle in enrich-chips/route.ts, adapted for this check.
+function detailIsReflectedInMatches(details: string, matches: RawMatch[]): boolean {
+  const contentWords = details.toLowerCase()
+    .split(/\W+/)
+    .filter(w => w.length > 3 && !DETAIL_STOP.has(w));
+  if (!contentWords.length) return true; // nothing specific enough to check against
+  const combinedReasons = matches.map(m => (typeof m.reason === "string" ? m.reason : "").toLowerCase()).join(" ");
+  // Word-boundary match, not plain substring — otherwise a brand name like
+  // "AGOLDE" false-matches the content word "gold".
+  return contentWords.some(w => new RegExp(`\\b${w}\\b`).test(combinedReasons));
 }
 
 export async function POST(req: NextRequest) {
@@ -912,19 +941,12 @@ export async function POST(req: NextRequest) {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return NextResponse.json({ error: "Could not parse response" }, { status: 500 });
 
-    const parsed = JSON.parse(jsonMatch[0]) as { analysis: { color: string; category: string; aesthetic: string; detectedBrand?: string | null }; matches: RawMatch[] };
+    const parsed = JSON.parse(jsonMatch[0]) as { analysis: { color: string; category: string; aesthetic: string; details?: string; detectedBrand?: string | null }; matches: RawMatch[] };
     const isDirectionMode = filters?.recommendationStyle === "direction";
 
-    // Cross-check analysis.category against analysis.aesthetic — one retry if they disagree.
-    const statedNorm  = normalizeAnalysisCategory(parsed.analysis?.category ?? "");
-    const inferredCat = inferCategoryFromAesthetic(parsed.analysis?.aesthetic ?? "");
-    if (inferredCat && inferredCat !== statedNorm) {
-      console.log(`[analyze] ⚠ category inconsistency: stated="${parsed.analysis?.category}" (→${statedNorm}) aesthetic-implied="${inferredCat}" — retrying with correction`);
-      const correctionPrefix =
-        `CLASSIFICATION CORRECTION: In your previous response you described the uploaded piece as a "${inferredCat}" ` +
-        `in the aesthetic field but set analysis.category to "${parsed.analysis?.category}". ` +
-        `These contradict each other. The uploaded piece is a ${inferredCat}. ` +
-        `Set analysis.category to a value consistent with ${inferredCat}, and recommend pieces that complement a ${inferredCat} — not a ${parsed.analysis?.category}.\n\n`;
+    // One retry call, reused by both the category-inconsistency check and the
+    // missed-detail check below — same shape, different correction text.
+    async function retryWithCorrection(correctionPrefix: string): Promise<{ analysis: unknown; matches: RawMatch[] } | null> {
       const correctedMsg = await client.messages.create({
         model: "claude-sonnet-4-6",
         max_tokens: 1024,
@@ -939,18 +961,45 @@ export async function POST(req: NextRequest) {
       });
       const correctedText = correctedMsg.content[0].type === "text" ? correctedMsg.content[0].text : "";
       const correctedJson = correctedText.match(/\{[\s\S]*\}/);
-      if (correctedJson) {
-        const correctedParsed = JSON.parse(correctedJson[0]) as { analysis: unknown; matches: RawMatch[] };
-        const enriched = isDirectionMode ? (correctedParsed.matches ?? []) : await enrichMatchesWithImages(correctedParsed.matches ?? []);
-        return NextResponse.json({ ...correctedParsed, matches: enriched });
-      }
-      console.warn("[analyze] correction parse failed — using original response");
+      return correctedJson ? JSON.parse(correctedJson[0]) as { analysis: unknown; matches: RawMatch[] } : null;
+    }
+
+    // Cross-check analysis.category against analysis.aesthetic — one retry if they disagree.
+    const statedNorm  = normalizeAnalysisCategory(parsed.analysis?.category ?? "");
+    const inferredCat = inferCategoryFromAesthetic(parsed.analysis?.aesthetic ?? "");
+    let current: { analysis: { details?: string; [key: string]: unknown }; matches: RawMatch[] } = parsed;
+
+    if (inferredCat && inferredCat !== statedNorm) {
+      console.log(`[analyze] ⚠ category inconsistency: stated="${parsed.analysis?.category}" (→${statedNorm}) aesthetic-implied="${inferredCat}" — retrying with correction`);
+      const correctionPrefix =
+        `CLASSIFICATION CORRECTION: In your previous response you described the uploaded piece as a "${inferredCat}" ` +
+        `in the aesthetic field but set analysis.category to "${parsed.analysis?.category}". ` +
+        `These contradict each other. The uploaded piece is a ${inferredCat}. ` +
+        `Set analysis.category to a value consistent with ${inferredCat}, and recommend pieces that complement a ${inferredCat} — not a ${parsed.analysis?.category}.\n\n`;
+      const corrected = await retryWithCorrection(correctionPrefix);
+      if (corrected) current = corrected as typeof current;
+      else console.warn("[analyze] category correction parse failed — using original response");
+    }
+
+    // Similar-styles mode only: if the model detected a standout detail but none
+    // of the 3 reasons actually reference it, retry once with a pointed correction
+    // rather than silently shipping generic silhouette-only suggestions.
+    const details = mode === "similar" ? (current.analysis?.details ?? "").trim() : "";
+    if (details && !detailIsReflectedInMatches(details, current.matches ?? [])) {
+      console.log(`[analyze] ⚠ standout detail "${details}" not reflected in any match reason — retrying with correction`);
+      const detailCorrectionPrefix =
+        `DETAIL CORRECTION: Your previous response identified this standout detail on the uploaded piece: "${details}". ` +
+        `But none of your 3 suggested items actually reflected it — they only described the general garment shape and color. ` +
+        `Regenerate the 3 suggestions so at least one of them is a genuinely distinctive item that itself has a similar design twist, not a plain item with the detail mentioned only in passing. The other suggestions can stay classic/versatile.\n\n`;
+      const corrected = await retryWithCorrection(detailCorrectionPrefix);
+      if (corrected) current = corrected as typeof current;
+      else console.warn("[analyze] detail correction parse failed — using previous response");
     }
 
     const enrichedMatches = isDirectionMode
-      ? (parsed.matches ?? [])
-      : await enrichMatchesWithImages(parsed.matches ?? []);
-    return NextResponse.json({ ...parsed, matches: enrichedMatches });
+      ? (current.matches ?? [])
+      : await enrichMatchesWithImages(current.matches ?? []);
+    return NextResponse.json({ ...current, matches: enrichedMatches });
   } catch (err) {
     console.error("Analyze error:", err);
     return NextResponse.json({ error: "Failed to analyze" }, { status: 500 });

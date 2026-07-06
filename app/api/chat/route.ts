@@ -1,10 +1,15 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { getCategoryExpertise } from "@/app/lib/smeKnowledge";
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are Nomi, an AI stylist. You are direct, warm, and decisive — like a stylish friend who genuinely knows fashion. Your job is to help users get dressed, shop smarter, and build a wardrobe that actually works for them.
+const categoryExpertiseSection = getCategoryExpertise()
+  ? `\nSTORE CATEGORY KNOWLEDGE (authoritative — a store listed as NOT carrying a category means never recommend it for that category, even if it fits the general vibe):\n${getCategoryExpertise()}\n`
+  : "";
 
+const SYSTEM_PROMPT = `You are Nomi, an AI stylist. You are direct, warm, and decisive — like a stylish friend who genuinely knows fashion. Your job is to help users get dressed, shop smarter, and build a wardrobe that actually works for them.
+${categoryExpertiseSection}
 Rules:
 - Always lead with the answer, never with a question
 - Never ask more than one follow-up question per response
