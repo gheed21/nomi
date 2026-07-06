@@ -9,7 +9,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "urban outfitters":  q => `https://www.urbanoutfitters.com/search?q=${q}`,
   "free people":       q => `https://www.freepeople.com/search/?q=${q}`,
   "anthropologie":     q => `https://www.anthropologie.com/search?q=${q}`,
-  "madewell":          q => `https://www.madewell.com/search.html?q=${q}`,
   "uniqlo":            q => `https://www.uniqlo.com/us/en/search?q=${q}`,
   // ── Workwear / classic ────────────────────────────────────────────────────
   "banana republic":   q => `https://bananarepublic.gap.com/browse/search.do?searchText=${q}`,
@@ -60,7 +59,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "urban outfitters":  "Urban Outfitters",
   "free people":       "Free People",
   "anthropologie":     "Anthropologie",
-  "madewell":          "Madewell",
   "uniqlo":            "Uniqlo",
   "banana republic":   "Banana Republic",
   "old navy":          "Old Navy",
@@ -101,6 +99,10 @@ export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // & other stories — old /en_usd/search.html path no longer resolves to search results,
   // just lands on the generic homepage; fallback to Google
   { key: "& other stories", displayName: "& Other Stories" },
+  // madewell — /search.html?q= no longer returns filtered results, lands on the
+  // generic site instead (confirmed by user); Akamai blocks all scripted requests
+  // to madewell.com so the correct replacement path can't be verified automatically
+  { key: "madewell",     displayName: "Madewell"    },
   // mango — old /us/search path now 404s; real path needs a gender segment (/us/en/search/women) we can't determine
   { key: "mango",        displayName: "Mango"       },
   { key: "lululemon",    displayName: "Lululemon"   },
