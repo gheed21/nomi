@@ -31,6 +31,68 @@ function itemAppearsInTitle(item: string, title: string): boolean {
   return contentWords.some(w => t.includes(w));
 }
 
+// Reads width/height from raw JPEG/PNG/WebP bytes without fetching an image library.
+// WebP support matters here specifically because Google's gstatic thumbnail CDN
+// (the source of Shopping thumbnails) serves WebP by default to non-browser clients.
+function getImageDimensions(buf: Buffer): { width: number; height: number } | null {
+  if (buf.length > 24 && buf.readUInt32BE(0) === 0x89504e47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 8 < buf.length) {
+      if (buf[offset] !== 0xff) break;
+      const marker = buf[offset + 1];
+      if (marker === 0xd8 || marker === 0xd9) { offset += 2; continue; }
+      const segLen = buf.readUInt16BE(offset + 2);
+      if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+        return { height: buf.readUInt16BE(offset + 5), width: buf.readUInt16BE(offset + 7) };
+      }
+      offset += 2 + segLen;
+    }
+  }
+  if (buf.length > 30 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") {
+    const fourCC = buf.toString("ascii", 12, 16);
+    if (fourCC === "VP8 " && buf[23] === 0x9d && buf[24] === 0x01 && buf[25] === 0x2a) {
+      return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+    }
+    if (fourCC === "VP8L" && buf[20] === 0x2f) {
+      const bits = buf.readUInt32LE(21);
+      return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+    }
+    if (fourCC === "VP8X") {
+      const width  = (buf[24] | (buf[25] << 8) | (buf[26] << 16)) + 1;
+      const height = (buf[27] | (buf[28] << 8) | (buf[29] << 16)) + 1;
+      return { width, height };
+    }
+  }
+  return null;
+}
+
+// Google Shopping thumbnails are sometimes a retailer's full-outfit lifestyle
+// photo rather than an isolated product shot (e.g. a model wearing the
+// recommended shoe as one small part of a head-to-toe look). Genuine isolated
+// product photos from Shopping listings come back consistently near-square;
+// lifestyle/editorial shots are noticeably taller (portrait) or wider
+// (landscape). This is a heuristic, not a guarantee — it won't catch every
+// mismatch, but it filters the common case.
+async function isLikelyProductPhoto(url: string): Promise<boolean> {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2500);
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timer);
+    if (!res.ok) return false;
+    const buf = Buffer.from(await res.arrayBuffer());
+    const dims = getImageDimensions(buf);
+    if (!dims || !dims.width || !dims.height) return true; // couldn't parse — don't block on it
+    const ratio = dims.width / dims.height;
+    return ratio >= 0.8 && ratio <= 1.25;
+  } catch {
+    return true; // fetch failed — don't block the chip on this check
+  }
+}
+
 // HEAD-checks a product URL before surfacing it. Returns the productLink if
 // live, or falls back to the store's own search URL if the link is dead (404,
 // 403, network error, or timeout). 3s timeout so happy-path adds minimal latency.
@@ -70,9 +132,10 @@ async function verifyChip(item: string, store: string, searchUrl: string): Promi
       if (storeMatch && titleMatch) {
         const rawLink = r.link ?? r.product_link ?? null;
         const productLink = await checkLink(rawLink, searchUrl);
+        const thumbnailOk = r.thumbnail ? await isLikelyProductPhoto(r.thumbnail) : false;
         return {
           verified:    true,
-          image:       r.thumbnail ?? null,
+          image:       thumbnailOk ? r.thumbnail! : null,
           productLink,
         };
       }
