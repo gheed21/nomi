@@ -9,6 +9,7 @@ export type CommunityPiece = {
   store?: string;
   price?: string;
   searchUrl?: string;
+  productLink?: string;
   category?: string;
 };
 

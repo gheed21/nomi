@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import NomiNav from "../components/NomiNav";
 import ShareToExploreModal from "../components/ShareToExploreModal";
 import ItemThumbnail from "../components/ItemThumbnail";
+import { STORE_SEARCH } from "../lib/storeSearch";
+
+// Direct-to-retailer link for known stores, falling back to a Google Shopping
+// search (item name only, no store keyword) for stores without a search URL.
+// Mirrors the same STORE_SEARCH table the chat feature uses, so mock/fallback
+// items don't send users to Google Shopping's mixed-reseller results.
+function directStoreLink(name: string, store: string): string {
+  const builder = STORE_SEARCH[store.toLowerCase().trim()];
+  const q = encodeURIComponent(name);
+  return builder ? builder(q) : `https://www.google.com/search?tbm=shop&q=${q}`;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -214,23 +225,30 @@ function hasEnoughMatchesInCategory(
 }
 
 // Fallback suggestions used when retry still returns wrong-category items.
-const CATEGORY_FALLBACKS: Record<string, Match[]> = {
+const CATEGORY_FALLBACK_ITEMS: Record<string, Omit<Match, "searchUrl">[]> = {
   shoes: [
-    { name: "White Leather Sneakers", store: "ASOS", price: "$35–$55", reason: "A clean white sneaker is the most versatile shoe option — pairs with almost anything.", searchUrl: "https://www.google.com/search?tbm=shop&q=White+Leather+Sneakers+ASOS" },
-    { name: "Black Strappy Sandals", store: "Zara", price: "$30–$50", reason: "Strappy sandals keep the look elevated without overpowering the rest of the outfit.", searchUrl: "https://www.google.com/search?tbm=shop&q=Black+Strappy+Sandals+Zara" },
-    { name: "Tan Block Heel Mules", store: "H&M", price: "$25–$45", reason: "Block heel mules offer height and comfort — an easy, wearable shoe option.", searchUrl: "https://www.google.com/search?tbm=shop&q=Tan+Block+Heel+Mules+H%26M" },
+    { name: "White Leather Sneakers", store: "ASOS", price: "$35–$55", reason: "A clean white sneaker is the most versatile shoe option — pairs with almost anything." },
+    { name: "Black Strappy Sandals", store: "Zara", price: "$30–$50", reason: "Strappy sandals keep the look elevated without overpowering the rest of the outfit." },
+    { name: "Tan Block Heel Mules", store: "H&M", price: "$25–$45", reason: "Block heel mules offer height and comfort — an easy, wearable shoe option." },
   ],
   bags: [
-    { name: "Mini Leather Crossbody Bag", store: "Mango", price: "$40–$60", reason: "A sleek mini crossbody keeps the look polished without adding bulk.", searchUrl: "https://www.google.com/search?tbm=shop&q=Mini+Leather+Crossbody+Bag+Mango" },
-    { name: "Classic Canvas Tote", store: "Madewell", price: "$50–$75", reason: "A structured canvas tote works for everyday carry and complements most outfits.", searchUrl: "https://www.google.com/search?tbm=shop&q=Classic+Canvas+Tote+Madewell" },
-    { name: "Structured Shoulder Bag", store: "ASOS", price: "$30–$50", reason: "A simple shoulder bag adds function without competing for visual attention.", searchUrl: "https://www.google.com/search?tbm=shop&q=Structured+Shoulder+Bag+ASOS" },
+    { name: "Mini Leather Crossbody Bag", store: "Mango", price: "$40–$60", reason: "A sleek mini crossbody keeps the look polished without adding bulk." },
+    { name: "Classic Canvas Tote", store: "Madewell", price: "$50–$75", reason: "A structured canvas tote works for everyday carry and complements most outfits." },
+    { name: "Structured Shoulder Bag", store: "ASOS", price: "$30–$50", reason: "A simple shoulder bag adds function without competing for visual attention." },
   ],
   tops: [
-    { name: "White Fitted Ribbed Top", store: "Zara", price: "$20–$35", reason: "A clean ribbed top is the easiest layering piece and works with nearly any bottom.", searchUrl: "https://www.google.com/search?tbm=shop&q=White+Fitted+Ribbed+Top+Zara" },
-    { name: "Black Satin Slip Top", store: "ASOS", price: "$25–$40", reason: "A satin slip top reads effortlessly dressy and pairs with both denim and tailoring.", searchUrl: "https://www.google.com/search?tbm=shop&q=Black+Satin+Slip+Top+ASOS" },
-    { name: "Oversized Linen Button-Down", store: "Mango", price: "$30–$50", reason: "An oversized linen shirt works tucked, untucked, or as a lightweight layer.", searchUrl: "https://www.google.com/search?tbm=shop&q=Oversized+Linen+Button-Down+Mango" },
+    { name: "White Fitted Ribbed Top", store: "Zara", price: "$20–$35", reason: "A clean ribbed top is the easiest layering piece and works with nearly any bottom." },
+    { name: "Black Satin Slip Top", store: "ASOS", price: "$25–$40", reason: "A satin slip top reads effortlessly dressy and pairs with both denim and tailoring." },
+    { name: "Oversized Linen Button-Down", store: "Mango", price: "$30–$50", reason: "An oversized linen shirt works tucked, untucked, or as a lightweight layer." },
   ],
 };
+
+const CATEGORY_FALLBACKS: Record<string, Match[]> = Object.fromEntries(
+  Object.entries(CATEGORY_FALLBACK_ITEMS).map(([cat, items]) => [
+    cat,
+    items.map(m => ({ ...m, searchUrl: directStoreLink(m.name, m.store ?? "") })),
+  ]),
+);
 
 // After a failed retry, replace any non-matching items with known-good fallbacks
 // so the user never sees a wrong-category result.
@@ -917,7 +935,7 @@ export default function ResultsPage() {
           <ShareToExploreModal
             images={sharePairs.map(p => p.img as string)}
             tiers={sharePairs.map(p => p.tier)}
-            pieces={result.matches.map(m => ({ name: m.name, store: m.store, price: m.price, searchUrl: m.searchUrl, category: m.category }))}
+            pieces={result.matches.map(m => ({ name: m.name, store: m.store, price: m.price, searchUrl: m.searchUrl, productLink: m.productLink ?? undefined, category: m.category }))}
             onClose={() => setShareOpen(false)}
             onShared={() => {
               setShareOpen(false);
@@ -1056,7 +1074,8 @@ function ItemDetail({ match, onBack, searchImage, analysis, originalMeta, onSave
   }, [match.name, match.store]);
 
   function handleShop() {
-    const url = match.searchUrl
+    const url = match.productLink
+      ?? match.searchUrl
       ?? `https://www.google.com/search?tbm=shop&q=${match.name.replace(/\s+/g, "+")}${match.store ? "+" + match.store.replace(/\s+/g, "+") : ""}`;
     window.open(url, "_blank", "noopener");
   }

@@ -465,6 +465,8 @@ function CommunityDetail({ look, isSaved, onSave, onClose, onTagTap }: {
   const isMulti   = allImages.length > 1;
 
   function shopPiece(piece: CommunityPiece) {
+    if (piece.productLink) { window.open(piece.productLink, "_blank", "noopener"); return; }
+    if (piece.searchUrl)   { window.open(piece.searchUrl, "_blank", "noopener"); return; }
     const q = encodeURIComponent([piece.name, piece.store].filter(Boolean).join(" "));
     window.open(`https://www.google.com/search?tbm=shop&q=${q}`, "_blank", "noopener");
   }
