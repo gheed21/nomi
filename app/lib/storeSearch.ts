@@ -94,7 +94,7 @@ const STORE_DISPLAY: Record<string, string> = {
 
 // Stores commonly mentioned by Nomi that don't have a direct search URL.
 // Matched case-insensitively; chips link to a plain Google web search instead.
-const FALLBACK_STORES: { key: string; displayName: string }[] = [
+export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // ── Luxury / designer ─────────────────────────────────────────────────────
   // toteme / bottega veneta — moved to STORE_SEARCH (search URLs verified)
   // lululemon / loro piana — ERR_HTTP2_PROTOCOL_ERROR on all subdomains, fallback to Google

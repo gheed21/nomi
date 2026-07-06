@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { STORE_SEARCH } from "@/app/lib/storeSearch";
+import { STORE_SEARCH, FALLBACK_STORES } from "@/app/lib/storeSearch";
 
 // ─── SerpAPI image enrichment ─────────────────────────────────────────────────
 
@@ -162,7 +162,13 @@ function buildStoreSearchUrl(store: string, name: string): string {
     const storeRoot = key.split(/[\s.]/)[0];
     if (key.includes(pattern) || pattern.includes(storeRoot)) return builder(q);
   }
-  // Unknown store: Google Shopping with item name only — no store as keyword
+  // Known store, just no reliable direct search URL (e.g. Mango, Everlane) —
+  // include the store name in the query so results aren't a random grab-bag
+  // of every retailer that carries a similar item.
+  const known = FALLBACK_STORES.find(s => key.includes(s.key) || s.key.includes(key.split(/[\s.]/)[0]));
+  if (known) return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(`${name} ${known.displayName}`)}`;
+  // Genuinely unrecognized store name (e.g. AI hallucination): drop it from the
+  // query rather than risk a zero-result search on Google Shopping's stricter matching.
   return `https://www.google.com/search?tbm=shop&q=${q}`;
 }
 
