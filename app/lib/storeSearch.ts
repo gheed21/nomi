@@ -4,7 +4,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "zara":              q => `https://www.zara.com/us/en/search?searchTerm=${q}`,
   "h&m":               q => `https://www2.hm.com/en_us/search-results.html?q=${q}`,
   "target":            q => `https://www.target.com/s?searchTerm=${q}`,
-  "abercrombie":       q => `https://www.abercrombie.com/shop/us/search-results?q=${q}`,
   // ── Mid-range / lifestyle ──────────────────────────────────────────────────
   "urban outfitters":  q => `https://www.urbanoutfitters.com/search?q=${q}`,
   "free people":       q => `https://www.freepeople.com/search/?q=${q}`,
@@ -55,7 +54,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "zara":              "Zara",
   "h&m":               "H&M",
   "target":            "Target",
-  "abercrombie":       "Abercrombie",
   "urban outfitters":  "Urban Outfitters",
   "free people":       "Free People",
   "anthropologie":     "Anthropologie",
@@ -103,6 +101,10 @@ export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // generic site instead (confirmed by user); Akamai blocks all scripted requests
   // to madewell.com so the correct replacement path can't be verified automatically
   { key: "madewell",     displayName: "Madewell"    },
+  // abercrombie — /shop/us/search-results?q= now returns "Page Not Found" (confirmed
+  // via real browser, not just bot-blocking); Akamai blocks scripted requests to
+  // abercrombie.com too, so the correct replacement path can't be verified automatically
+  { key: "abercrombie",  displayName: "Abercrombie" },
   // mango — old /us/search path now 404s; real path needs a gender segment (/us/en/search/women) we can't determine
   { key: "mango",        displayName: "Mango"       },
   { key: "lululemon",    displayName: "Lululemon"   },

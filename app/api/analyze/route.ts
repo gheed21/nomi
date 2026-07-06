@@ -622,6 +622,8 @@ ${categoryExpertiseSection}${glossarySection}${colorGlossarySection}${colorSecti
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, a Google Shopping search URL, and a category field.
 
+price: always a range, never a single number — you have no verified real price for a specific product, only a general sense of what this type of item costs at that store. Use a range like "$40–$80" or "$60–$120", not "$65".
+
 searchUrl format: https://www.google.com/search?tbm=shop&q=item+name+store+name — replace every space with + and concatenate item name and store name. Example: "Black Ribbed Crop Top" at "ASOS" → https://www.google.com/search?tbm=shop&q=Black+Ribbed+Crop+Top+ASOS
 
 category must be exactly one of: top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — choose the one that best describes the suggested item.
@@ -707,6 +709,8 @@ ${categoryExpertiseSection}${glossarySection}${colorGlossarySection}${colorSecti
 
 For each match also include a category field: exactly one of top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — describing the type of item suggested.
 
+price: always a range, never a single number — you have no verified real price for a specific product, only a general sense of what this type of item costs at that store. Use a range like "$40–$80" or "$60–$120", not "$65".
+
 Before you output the JSON: check the uploaded piece one more time for a standout, distinctive design detail (decorative hardware, charms, embellishments, appliqués, unusual trims or beading) beyond its basic silhouette. If one is present, at least one of your 3 suggestions must be a genuinely distinctive item that itself has a similar twist — not a plain, generic item with the detail added to the reason text as an afterthought. That match's name and reason should make the specialness obvious, not just claim it.
 
 Return JSON only in this format:
@@ -759,6 +763,7 @@ Store selection rules:
 ${categoryExpertiseSection}${colorSection}${budgetSection}${categorySection}${secondhandSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each piece return: a specific item name, the store or brand, an estimated price range, one sentence explaining why it works stylistically, and a Google Shopping search URL.
+price: always a range, never a single number — you have no verified real price for a specific product, only a general sense of what this type of item costs at that store. Use a range like "$40–$80" or "$60–$120", not "$65".
 searchUrl format: https://www.google.com/search?tbm=shop&q=item+name+store+name
 
 Also infer "analysis" fields from the description: color (dominant color of the described item), category (item type), aesthetic (one evocative sentence about the overall style). Set detectedBrand to null (no image to read from).
