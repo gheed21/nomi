@@ -686,6 +686,8 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
 
   const exclusiveConstraint = detectExclusiveConstraint(filters);
 
+  const detailsInstruction = "If the uploaded piece has a standout, distinctive design detail beyond its basic silhouette — decorative hardware, charms, embellishments, appliqués, unusual trims or beading — call it out specifically in analysis.details. Leave analysis.details as an empty string for plain/basic pieces with nothing distinctive. When analysis.details is non-empty, that detail is the defining trait of the piece — prioritize suggesting items that share it, not just the base garment shape and color, and mention it explicitly in the reason for each match.";
+
   const scopeInstruction = scope !== "any"
     ? "Suggest exactly 3 similar items in the exact same category as the uploaded piece — same type of garment, similar silhouette, cut, and aesthetic, from different stores or brands."
     : resolvedCats.length
@@ -693,12 +695,13 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
       : "Suggest exactly 3 items from DIFFERENT garment categories than the uploaded piece. First identify what type of item was uploaded (e.g. top, dress, shoes), then suggest complementary pieces from other categories — such as bottoms, shoes, bags, outerwear, or accessories — that share the same aesthetic, color story, and design details. Do NOT suggest another item of the same type as the uploaded piece. Explain how each suggested piece connects to the style of the uploaded item.";
 
   return `${mandatorySection}${criticalConstraint}${exclusiveConstraint}You are Nomi, an expert fashion stylist. Analyze the clothing item in the image and identify its key style attributes: silhouette, neckline, cut, fabric, color, and overall aesthetic. ${scopeInstruction}
+${detailsInstruction}
 ${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${secondhandSection}${descSection}${tasteSection}${genderSection}${feedbackSection}
 
 For each match also include a category field: exactly one of top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — describing the type of item suggested.
 
 Return JSON only in this format:
-{ "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
+{ "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string, "details": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
 }
 
 function buildTextSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | null, feedbackSignals?: FeedbackStore | null): string {

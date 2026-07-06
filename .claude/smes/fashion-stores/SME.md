@@ -103,7 +103,11 @@ This SME gives Nomi accurate, opinionated store knowledge so every recommendatio
 ### Tops & Dresses
 Best: Zara, Mango, Aritzia, Reformation, Free People, Anthropologie, ASOS, Sézane, Ganni, Self-Portrait, Jacquemus
 
-### Bottoms (Jeans, Trousers, Skirts)
+### Denim / Jeans
+Best: Zara, Mango, Abercrombie, Aritzia, Acne Studios, Diesel, COS, Massimo Dutti, A.P.C., Toteme
+Note: Reformation does NOT carry jeans/denim — confirmed by direct site search 2026-07-06 (no jeans results, no jeans nav category). Good for trousers/skirts (below), never for jeans specifically.
+
+### Trousers & Skirts (non-denim bottoms)
 Best: Zara, Mango, Abercrombie, Reformation, Aritzia, Acne Studios, Diesel, COS, Massimo Dutti, A.P.C., Toteme
 
 ### Knitwear & Sweaters
