@@ -157,15 +157,22 @@ function buildStoreSearchUrl(store: string, name: string): string {
   const key = store.toLowerCase().trim();
   const q   = encodeURIComponent(name);
   if (STORE_SEARCH[key]) return STORE_SEARCH[key](q);
+  // First alphanumeric token, e.g. "zara" from "zara usa" — used for fuzzy
+  // matching below. Must be >= 3 chars so short/symbol fragments (the "&" in
+  // "& other stories" splitting to just "&") can't false-match unrelated
+  // stores like "h&m" that merely happen to contain that character.
+  const storeRootMatch = key.match(/[a-z0-9]{3,}/);
+  const storeRoot = storeRootMatch ? storeRootMatch[0] : null;
   // Partial match handles "Zara USA", "shop.mango.com", "H&M Store", etc.
-  for (const [pattern, builder] of Object.entries(STORE_SEARCH)) {
-    const storeRoot = key.split(/[\s.]/)[0];
-    if (key.includes(pattern) || pattern.includes(storeRoot)) return builder(q);
+  if (storeRoot) {
+    for (const [pattern, builder] of Object.entries(STORE_SEARCH)) {
+      if (key.includes(pattern) || pattern.includes(storeRoot)) return builder(q);
+    }
   }
   // Known store, just no reliable direct search URL (e.g. Mango, Everlane) —
   // include the store name in the query so results aren't a random grab-bag
   // of every retailer that carries a similar item.
-  const known = FALLBACK_STORES.find(s => key.includes(s.key) || s.key.includes(key.split(/[\s.]/)[0]));
+  const known = FALLBACK_STORES.find(s => key.includes(s.key) || (storeRoot && s.key.includes(storeRoot)));
   if (known) return `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(`${name} ${known.displayName}`)}`;
   // Genuinely unrecognized store name (e.g. AI hallucination): drop it from the
   // query rather than risk a zero-result search on Google Shopping's stricter matching.

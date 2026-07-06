@@ -11,7 +11,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "anthropologie":     q => `https://www.anthropologie.com/search?q=${q}`,
   "madewell":          q => `https://www.madewell.com/search.html?q=${q}`,
   "uniqlo":            q => `https://www.uniqlo.com/us/en/search?q=${q}`,
-  "& other stories":   q => `https://www.stories.com/en_usd/search.html?q=${q}`,
   // ── Workwear / classic ────────────────────────────────────────────────────
   "banana republic":   q => `https://bananarepublic.gap.com/browse/search.do?searchText=${q}`,
   "old navy":          q => `https://oldnavy.gap.com/browse/search.do?searchString=${q}`,
@@ -63,7 +62,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "anthropologie":     "Anthropologie",
   "madewell":          "Madewell",
   "uniqlo":            "Uniqlo",
-  "& other stories":   "& Other Stories",
   "banana republic":   "Banana Republic",
   "old navy":          "Old Navy",
   "ralph lauren":      "Ralph Lauren",
@@ -100,6 +98,9 @@ export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // lululemon / loro piana — ERR_HTTP2_PROTOCOL_ERROR on all subdomains, fallback to Google
   // everlane — search?query= URL doesn't populate results reliably, fallback to Google
   { key: "everlane",     displayName: "Everlane"    },
+  // & other stories — old /en_usd/search.html path no longer resolves to search results,
+  // just lands on the generic homepage; fallback to Google
+  { key: "& other stories", displayName: "& Other Stories" },
   // mango — old /us/search path now 404s; real path needs a gender segment (/us/en/search/women) we can't determine
   { key: "mango",        displayName: "Mango"       },
   { key: "lululemon",    displayName: "Lululemon"   },
