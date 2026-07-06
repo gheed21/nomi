@@ -700,6 +700,8 @@ ${glossarySection}${colorGlossarySection}${colorSection}${budgetSection}${second
 
 For each match also include a category field: exactly one of top, bottom, shoes, bag, dress, jumpsuit, outerwear, accessory — describing the type of item suggested.
 
+Before you output the JSON: check the uploaded piece one more time for a standout, distinctive design detail (decorative hardware, charms, embellishments, appliqués, unusual trims or beading) beyond its basic silhouette. If one is present, it is the single most important thing to preserve in your 3 suggestions — every reason must name it specifically, not just describe the general garment shape and color.
+
 Return JSON only in this format:
 { "analysis": { "color": string, "category": string, "silhouette": string, "aesthetic": string, "details": string, "detectedBrand": string | null }, "matches": [ { "name": string, "store": string, "price": string, "reason": string, "category": string } ] }`;
 }
