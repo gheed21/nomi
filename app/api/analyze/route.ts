@@ -687,7 +687,8 @@ User's specific request: "${filters.description.trim()}". For each suggested pie
     const catLabel = resolvedCats.length === 1
       ? (subs.length ? subs.join(", ") : resolvedCats[0])
       : resolvedCats.join(" and ");
-    return `CRITICAL CONSTRAINT: You must ONLY suggest items from these categories: ${catLabel}. Do not suggest items from any other category under any circumstances, even if the uploaded image is a different category. Translate the style of the uploaded piece into the requested category/categories. Every suggestion must belong to one of: ${resolvedCats.join(", ")}. This is non-negotiable.\n\n`;
+    return `CRITICAL CONSTRAINT: You must ONLY suggest items from these categories: ${catLabel}. Do not suggest items from any other category under any circumstances, even if the uploaded image is a different category. Translate the style of the uploaded piece into the requested category/categories. Every suggestion must belong to one of: ${resolvedCats.join(", ")}. This is non-negotiable.
+IMPORTANT — a broad category can overlap with the uploaded piece's own type (e.g. both the uploaded piece and the request are "Bottoms"). First identify the uploaded piece's exact specific garment type (e.g. "jeans"). Then, even though it technically satisfies the requested category, you must NOT suggest that same specific garment type again — every suggestion must be a genuinely different garment type within the requested category/subcategories (e.g. jeans uploaded + "Bottoms" requested → suggest skirts, shorts, or trousers, never more jeans), translating the uploaded piece's style/color/details into that different type.\n\n`;
   })();
 
   const exclusiveConstraint = detectExclusiveConstraint(filters);
@@ -834,6 +835,24 @@ function detailIsReflectedInMatches(details: string, matches: RawMatch[]): boole
   // Word-boundary match, not plain substring — otherwise a brand name like
   // "AGOLDE" false-matches the content word "gold".
   return contentWords.some(w => new RegExp(`\\b${w}\\b`).test(combinedReasons));
+}
+
+// Garment subtypes that all fall under the broad "Bottoms" category filter —
+// selecting "Bottoms" alone doesn't exclude the uploaded piece's own subtype
+// (e.g. jeans satisfy "Bottoms" too), so a "find similar in other categories"
+// request can technically comply with the category constraint while still
+// just suggesting more of the same subtype the user was trying to move away from.
+const BOTTOM_SUBTYPES = ["jean", "skirt", "short", "trouser", "pant", "legging", "jogger"];
+
+// Returns the uploaded piece's specific subtype if any suggested match shares
+// it — meaning the model satisfied the broad category constraint without
+// actually giving the user a different garment type.
+function sameSubtypeViolation(uploadedCategory: string, matches: RawMatch[]): string | null {
+  const catLower = (uploadedCategory ?? "").toLowerCase();
+  const uploadedType = BOTTOM_SUBTYPES.find(t => new RegExp(`\\b${t}`).test(catLower));
+  if (!uploadedType) return null;
+  const offender = matches.some(m => new RegExp(`\\b${uploadedType}`).test((typeof m.name === "string" ? m.name : "").toLowerCase()));
+  return offender ? uploadedType : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -994,6 +1013,25 @@ export async function POST(req: NextRequest) {
       const corrected = await retryWithCorrection(detailCorrectionPrefix);
       if (corrected) current = corrected as typeof current;
       else console.warn("[analyze] detail correction parse failed — using previous response");
+    }
+
+    // "Find similar in other categories" mode only: a broad category like
+    // "Bottoms" doesn't exclude the uploaded piece's own subtype (jeans satisfy
+    // "Bottoms" too), so check whether any suggestion still shares that subtype
+    // despite the category constraint, and retry once with a pointed correction.
+    if (mode === "similar" && scope === "any" && resolveCategories(filters).length > 0) {
+      const uploadedCategory = (current.analysis?.category ?? "") as string;
+      const violatingSubtype = sameSubtypeViolation(uploadedCategory, current.matches ?? []);
+      if (violatingSubtype) {
+        console.log(`[analyze] ⚠ suggestion still shares uploaded piece's subtype "${violatingSubtype}" despite category constraint — retrying with correction`);
+        const subtypeCorrectionPrefix =
+          `CATEGORY CORRECTION: The uploaded piece is a "${uploadedCategory}" — specifically a ${violatingSubtype}. ` +
+          `At least one of your 3 suggestions was still a ${violatingSubtype}, which technically satisfies the requested broad category but doesn't give the user a genuinely different garment type. ` +
+          `Regenerate the 3 suggestions so none of them are a ${violatingSubtype} — every suggestion must be a different garment type within the requested category, translating the uploaded piece's style/color/details into that different type.\n\n`;
+        const corrected = await retryWithCorrection(subtypeCorrectionPrefix);
+        if (corrected) current = corrected as typeof current;
+        else console.warn("[analyze] category-subtype correction parse failed — using previous response");
+      }
     }
 
     const enrichedMatches = isDirectionMode
