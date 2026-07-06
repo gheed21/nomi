@@ -23,7 +23,6 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "bottega veneta":    q => `https://www.bottegaveneta.com/en-us/search?q=${q}`,
   "bottega":           q => `https://www.bottegaveneta.com/en-us/search?q=${q}`,
   // ── Elevated / designer ───────────────────────────────────────────────────
-  "reformation":       q => `https://www.thereformation.com/search?query=${q}`,
   "nordstrom":         q => `https://www.nordstrom.com/sr?origin=keywordsearch&keyword=${q}`,
   "allsaints":         q => `https://www.allsaints.com/us/en/search?q=${q}`,
   "net-a-porter":      q => `https://www.net-a-porter.com/en-us/shop/search?q=${q}`,
@@ -67,7 +66,6 @@ const STORE_DISPLAY: Record<string, string> = {
   "totème":            "Totème",
   "bottega veneta":    "Bottega Veneta",
   "bottega":           "Bottega Veneta",
-  "reformation":       "Reformation",
   "nordstrom":         "Nordstrom",
   "allsaints":         "AllSaints",
   "net-a-porter":      "Net-A-Porter",
@@ -105,6 +103,10 @@ export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   // via real browser, not just bot-blocking); Akamai blocks scripted requests to
   // abercrombie.com too, so the correct replacement path can't be verified automatically
   { key: "abercrombie",  displayName: "Abercrombie" },
+  // reformation — /search?query= no longer filters results at all (confirmed via real
+  // browser and repeated direct requests): every query, including ones that used to
+  // work, now returns the same generic unfiltered catalog page with an empty query string
+  { key: "reformation",  displayName: "Reformation" },
   // mango — old /us/search path now 404s; real path needs a gender segment (/us/en/search/women) we can't determine
   { key: "mango",        displayName: "Mango"       },
   { key: "lululemon",    displayName: "Lululemon"   },

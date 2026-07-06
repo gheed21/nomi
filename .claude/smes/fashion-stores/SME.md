@@ -191,7 +191,6 @@ Use these exact formats when building chip links. {query} = URL-encoded search t
 - Banana Republic: https://bananarepublic.gap.com/browse/search.do?searchText={query}
 - Uniqlo: https://www.uniqlo.com/us/en/search?q={query}
 - COS: https://www.cosstores.com/en_usd/search.html?q={query}
-- Reformation: https://www.thereformation.com/search?q={query}
 - Aritzia: https://www.aritzia.com/us/en/search?q={query}
 - Nordstrom: https://www.nordstrom.com/sr?origin=keywordsearch&keyword={query}
 - Revolve: https://www.revolve.com/r/Search.jsp?q={query}
@@ -217,6 +216,7 @@ These stores either block search URL patterns or require sessions:
 - & Other Stories — old `/en_usd/search.html?q=` path no longer resolves to search results, lands on the generic homepage instead; use Google fallback (confirmed 2026-07-06)
 - Madewell — old `/search.html?q=` path no longer returns filtered results, lands on the generic site instead (confirmed by user 2026-07-06); Akamai blocks all scripted requests to madewell.com (including the homepage), so a replacement URL can't be found/verified automatically — use Google fallback
 - Abercrombie — old `/shop/us/search-results?q=` path now returns "Page Not Found" (confirmed by user 2026-07-06); Akamai blocks scripted requests to abercrombie.com too, so a replacement URL can't be found/verified automatically — use Google fallback
+- Reformation — `/search?query=` no longer filters results at all (confirmed 2026-07-06 via real browser + repeated direct requests, including queries that worked earlier the same day): every query now returns the same generic unfiltered catalog page with an empty query string. Content-wise Reformation is still accurate for tops/dresses/trousers/skirts (see Category Expertise) — this only affects the direct link, use Google fallback instead
 - Chanel, Hermès, Dior, Louis Vuitton, Prada, Gucci, Bottega Veneta, Celine, Loewe, Miu Miu, Fendi, Balenciaga, Valentino, Burberry, Saint Laurent, Moncler, Ferragamo, Jimmy Choo, Manolo Blahnik, Christian Louboutin — all luxury, link to brand site homepage or Google Shopping
 - The RealReal, Vestiaire Collective, Depop, Poshmark — use Google fallback with store name in query
 - Golden Goose, Veja, Birkenstock, Ganni, Jacquemus, Acne Studios, Sandy Liang, Toteme, Sézane, Missoma, Monica Vinader — verify URL format before adding to STORE_SEARCH
