@@ -6,18 +6,42 @@ import { useState } from "react";
 
 type Props = { onComplete: () => void };
 
-const STYLE_OPTIONS = [
-  { key: "minimal",    label: "Clean & minimal", image: "/styles/minimal.png"    },
-  { key: "streetwear", label: "Streetwear",       image: "/styles/streetwear.png" },
-  { key: "romantic",   label: "Soft & romantic",  image: "/styles/romantic.png"   },
-  { key: "classic",    label: "Timeless classic", image: "/styles/classic.png"    },
-  { key: "edgy",       label: "Edgy",             image: "/styles/edgy.png"       },
-  { key: "boho",       label: "Boho",             image: "/styles/boho.png"       },
-  { key: "oldmoney",   label: "Old money",        image: "/styles/oldmoney.png"   },
-  { key: "coastal",    label: "Coastal",          image: "/styles/coastal.png"    },
+// Each gender has its own category list — not just different photos of the same
+// 8 categories. Men's swaps out Soft & romantic / Boho / Old money for Formal /
+// Workwear, matching the photo set actually provided. Kids has no dedicated set
+// yet, so it falls back to the women's categories (StyleTileImage below shows a
+// plain text tile instead of a broken image until kids photos exist).
+type StyleOption = { key: string; label: string; image: string };
+
+const WOMENS_STYLE_OPTIONS: StyleOption[] = [
+  { key: "minimal",    label: "Clean & minimal",  image: "/styles/minimal.png"    },
+  { key: "streetwear", label: "Streetwear",        image: "/styles/streetwear.png" },
+  { key: "romantic",   label: "Soft & romantic",   image: "/styles/romantic.png"   },
+  { key: "classic",    label: "Timeless classic",  image: "/styles/classic.png"    },
+  { key: "edgy",       label: "Edgy",              image: "/styles/edgy.png"       },
+  { key: "boho",       label: "Boho",              image: "/styles/boho.png"       },
+  { key: "oldmoney",   label: "Old money",         image: "/styles/oldmoney.png"   },
+  { key: "coastal",    label: "Coastal",           image: "/styles/coastal.png"    },
 ];
 
+const MENS_STYLE_OPTIONS: StyleOption[] = [
+  { key: "minimal",    label: "Clean & minimal",  image: "/styles/mens-minimal.png"    },
+  { key: "streetwear", label: "Streetwear",        image: "/styles/mens-streetwear.png" },
+  { key: "classic",    label: "Timeless classic",  image: "/styles/mens-classic.png"    },
+  { key: "edgy",       label: "Edgy",              image: "/styles/mens-edgy.png"       },
+  { key: "coastal",    label: "Coastal",           image: "/styles/mens-coastal.png"    },
+  { key: "formal",     label: "Formal",            image: "/styles/mens-formal.png"     },
+  { key: "workwear",   label: "Workwear",          image: "/styles/mens-workwear.png"   },
+];
+
+function styleOptionsFor(gender: string): StyleOption[] {
+  if (gender === "Men's") return MENS_STYLE_OPTIONS;
+  return WOMENS_STYLE_OPTIONS; // Women's, Kids, All, or unselected
+}
+
 const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "All"];
+
+const TOTAL_SCREENS = 5;
 
 const PRICE_MAX = 1000;
 
@@ -72,7 +96,7 @@ export default function Onboarding({ onComplete }: Props) {
     onComplete();
   }
 
-  const primaryLabel = screen === 0 ? "Get started" : screen < 3 ? "Next" : "Start styling";
+  const primaryLabel = screen === 0 ? "Get started" : screen < TOTAL_SCREENS - 1 ? "Next" : "Start styling";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 500, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -94,14 +118,14 @@ export default function Onboarding({ onComplete }: Props) {
         <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <div style={{
             display: "flex",
-            width: "400%",
+            width: `${TOTAL_SCREENS * 100}%`,
             height: "100%",
-            transform: `translateX(${-screen * 25}%)`,
+            transform: `translateX(${-screen * (100 / TOTAL_SCREENS)}%)`,
             transition: "transform 0.38s cubic-bezier(0.4, 0, 0.2, 1)",
           }}>
 
             {/* ── Screen 1 — What Nomi does ── */}
-            <div style={{ width: "25%", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 28px 16px" }}>
+            <div style={{ width: "20%", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 28px 16px" }}>
               <p style={{ fontSize: "44px", fontWeight: 500, letterSpacing: "-2px", color: "#c9a96e", lineHeight: 1, marginBottom: "16px" }}>nomi.</p>
               <h1 style={{ fontSize: "32px", fontWeight: 700, letterSpacing: "-0.8px", color: "#000", textAlign: "center", marginBottom: "14px", lineHeight: 1.15 }}>
                 Your AI stylist.
@@ -113,7 +137,7 @@ export default function Onboarding({ onComplete }: Props) {
             </div>
 
             {/* ── Screen 2 — How it works ── */}
-            <div style={{ width: "25%", height: "100%", overflowY: "auto", padding: "60px 28px 120px" }}>
+            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "60px 28px 120px" }}>
               <h2 style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "-0.7px", color: "#000", marginBottom: "40px", lineHeight: 1.2 }}>
                 How it works
               </h2>
@@ -142,8 +166,35 @@ export default function Onboarding({ onComplete }: Props) {
               </div>
             </div>
 
-            {/* ── Screen 3 — Make it yours ── */}
-            <div style={{ width: "25%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+            {/* ── Screen 3 — Who are you shopping for? ── */}
+            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+              <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
+                Optional — helps Nomi show you the right styles.
+              </p>
+              <h2 style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.6px", color: "#000", marginBottom: "22px", lineHeight: 1.2 }}>
+                Who are you shopping for?
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {GENDER_OPTIONS.map(opt => {
+                  const on = gender === opt;
+                  return (
+                    <button key={opt} onClick={() => setGender(on ? "" : opt)} style={{
+                      padding: "16px 18px", borderRadius: "16px", textAlign: "left",
+                      border: `1.5px solid ${on ? "#c9a96e" : "#e8e8e8"}`,
+                      background: on ? "#f7f0e4" : "#fff",
+                      color: on ? "#c9a96e" : "#444",
+                      fontSize: "15px", fontWeight: on ? 600 : 500,
+                      cursor: "pointer", transition: "all 0.12s",
+                    }}>
+                      {opt}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Screen 4 — Make it yours ── */}
+            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — helps Nomi match your taste from day one.
               </p>
@@ -156,7 +207,7 @@ export default function Onboarding({ onComplete }: Props) {
 
               {/* 1 — Style image grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
-                {STYLE_OPTIONS.map(({ key, image, label }) => {
+                {styleOptionsFor(gender).map(({ key, image, label }) => {
                   const on = styles.includes(key);
                   return (
                     <button key={key} onClick={() => toggleStyle(key)} style={{
@@ -165,8 +216,7 @@ export default function Onboarding({ onComplete }: Props) {
                       padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
                       transition: "border-color 0.12s",
                     }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={image} alt={label} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      <StyleTileImage src={image} label={label} />
                       <div style={{
                         position: "absolute", top: "6px", right: "6px",
                         width: "20px", height: "20px", borderRadius: "50%",
@@ -212,27 +262,7 @@ export default function Onboarding({ onComplete }: Props) {
                 }}
               />
 
-              {/* 3 — Who are you shopping for? */}
-              <FieldLabel>Who are you shopping for?</FieldLabel>
-              <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-                {GENDER_OPTIONS.map(opt => {
-                  const on = gender === opt;
-                  return (
-                    <button key={opt} onClick={() => setGender(on ? "" : opt)} style={{
-                      padding: "9px 18px", borderRadius: "20px",
-                      border: `1.5px solid ${on ? "#c9a96e" : "#e8e8e8"}`,
-                      background: on ? "#f7f0e4" : "#fff",
-                      color: on ? "#c9a96e" : "#444",
-                      fontSize: "14px", fontWeight: on ? 600 : 500,
-                      cursor: "pointer", transition: "all 0.12s",
-                    }}>
-                      {opt}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* 4 — Anything you never wear? */}
+              {/* 3 — Anything you never wear? */}
               <FieldLabel>Anything you never wear?</FieldLabel>
               <textarea
                 placeholder="e.g. heels, crop tops, anything sleeveless, loud prints..."
@@ -248,7 +278,7 @@ export default function Onboarding({ onComplete }: Props) {
                 }}
               />
 
-              {/* 5 — Budget slider */}
+              {/* 4 — Budget slider */}
               <FieldLabel>Budget</FieldLabel>
               <div style={{ display: "flex", alignItems: "baseline", gap: "4px", marginBottom: "14px" }}>
                 <span style={{ fontSize: "17px", fontWeight: 600, color: "#000", letterSpacing: "-0.3px" }}>
@@ -262,8 +292,8 @@ export default function Onboarding({ onComplete }: Props) {
               <PriceRangeSlider value={priceRange} onChange={setPriceRange} />
             </div>
 
-            {/* ── Screen 4 — A little more about you ── */}
-            <div style={{ width: "25%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+            {/* ── Screen 5 — A little more about you ── */}
+            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — skip anything that doesn&apos;t apply.
               </p>
@@ -402,7 +432,7 @@ export default function Onboarding({ onComplete }: Props) {
         <div style={{ padding: "12px 28px 44px", flexShrink: 0 }}>
           {/* Progress dots */}
           <div style={{ display: "flex", justifyContent: "center", gap: "6px", marginBottom: "18px" }}>
-            {[0, 1, 2, 3].map(i => (
+            {Array.from({ length: TOTAL_SCREENS }, (_, i) => i).map(i => (
               <div key={i} style={{
                 width: i === screen ? "22px" : "6px",
                 height: "6px", borderRadius: "99px",
@@ -426,7 +456,7 @@ export default function Onboarding({ onComplete }: Props) {
 
           {/* Primary button */}
           <button
-            onClick={() => screen < 3 ? setScreen(s => s + 1) : finish()}
+            onClick={() => screen < TOTAL_SCREENS - 1 ? setScreen(s => s + 1) : finish()}
             style={{
               width: "100%", padding: "16px", borderRadius: "16px", border: "none",
               background: "#c9a96e", color: "#fff",
@@ -443,6 +473,23 @@ export default function Onboarding({ onComplete }: Props) {
 }
 
 // ─── Shared small components ─────────────────────────────────────────────────
+
+// Falls back to a plain label tile instead of a broken-image icon when a
+// gender-specific style photo (mens/*.png, kids/*.png) hasn't been added yet.
+function StyleTileImage({ src, label }: { src: string; label: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px", textAlign: "center" }}>
+        <span style={{ fontSize: "13px", fontWeight: 600, color: "#999" }}>{label}</span>
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={label} onError={() => setFailed(true)} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center", display: "block" }} />
+  );
+}
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
