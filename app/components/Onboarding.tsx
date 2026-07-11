@@ -8,9 +8,7 @@ type Props = { onComplete: () => void };
 
 // Each gender has its own category list — not just different photos of the same
 // 8 categories. Men's swaps out Soft & romantic / Boho / Old money for Formal /
-// Workwear, matching the photo set actually provided. Kids has no dedicated set
-// yet, so it falls back to the women's categories (StyleTileImage below shows a
-// plain text tile instead of a broken image until kids photos exist).
+// Workwear, matching the photo set actually provided.
 type StyleOption = { key: string; label: string; image: string };
 
 const WOMENS_STYLE_OPTIONS: StyleOption[] = [
@@ -36,10 +34,10 @@ const MENS_STYLE_OPTIONS: StyleOption[] = [
 
 function styleOptionsFor(gender: string): StyleOption[] {
   if (gender === "Men's") return MENS_STYLE_OPTIONS;
-  return WOMENS_STYLE_OPTIONS; // Women's, Kids, All, or unselected
+  return WOMENS_STYLE_OPTIONS; // Women's, All, or unselected
 }
 
-const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "All"];
+const GENDER_OPTIONS = ["Women's", "Men's", "All"];
 
 const TOTAL_SCREENS = 5;
 
