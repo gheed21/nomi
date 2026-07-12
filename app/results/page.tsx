@@ -6,6 +6,7 @@ import NomiNav from "../components/NomiNav";
 import ShareToExploreModal from "../components/ShareToExploreModal";
 import ItemThumbnail from "../components/ItemThumbnail";
 import { STORE_SEARCH } from "../lib/storeSearch";
+import { recordTasteSignal } from "../lib/tasteProfile";
 
 // Direct-to-retailer link for known stores, falling back to a Google Shopping
 // search (item name only, no store keyword) for stores without a search URL.
@@ -345,18 +346,12 @@ function sortMatches(matches: Match[], sortOrder?: string): Match[] {
 }
 
 function updateTasteProfile(match: Match, analysis?: Analysis) {
-  type TP = Record<string, Record<string, number>>;
-  const profile: TP = JSON.parse(localStorage.getItem("nomi_taste_profile") ?? "{}");
-  function inc(key: string, val?: string) {
-    if (!val) return;
-    profile[key] ??= {};
-    profile[key][val] = (profile[key][val] ?? 0) + 1;
-  }
-  inc("colors",     analysis?.color);
-  inc("categories", analysis?.category);
-  inc("aesthetics", analysis?.aesthetic);
-  inc("stores",     match.store);
-  localStorage.setItem("nomi_taste_profile", JSON.stringify(profile));
+  recordTasteSignal({
+    color:     analysis?.color,
+    category:  analysis?.category,
+    aesthetic: analysis?.aesthetic,
+    store:     match.store,
+  });
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────

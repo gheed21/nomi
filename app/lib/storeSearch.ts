@@ -9,6 +9,7 @@ export const STORE_SEARCH: Record<string, (q: string) => string> = {
   "free people":       q => `https://www.freepeople.com/search/?q=${q}`,
   "anthropologie":     q => `https://www.anthropologie.com/search?q=${q}`,
   "uniqlo":            q => `https://www.uniqlo.com/us/en/search?q=${q}`,
+  "cos":               q => `https://www.cosstores.com/en_usd/search.html?q=${q}`,
   // ── Workwear / classic ────────────────────────────────────────────────────
   "banana republic":   q => `https://bananarepublic.gap.com/browse/search.do?searchText=${q}`,
   "old navy":          q => `https://oldnavy.gap.com/browse/search.do?searchString=${q}`,
@@ -150,7 +151,8 @@ export const FALLBACK_STORES: { key: string; displayName: string }[] = [
   { key: "hollister",      displayName: "Hollister"       },
   { key: "express",        displayName: "Express"         },
   { key: "shein",          displayName: "Shein"           },
-  // "cos" omitted — 3 chars, matches inside "costs", "because", etc.
+  // "cos" lives in STORE_SEARCH instead (has a verified direct search URL) —
+  // omitted here too since as a 3-char fallback key it'd match inside "costs", "because", etc.
   { key: "aritzia",        displayName: "Aritzia"         },
   { key: "spanx",          displayName: "Spanx"           },
   // ── Activewear ────────────────────────────────────────────────────────────
