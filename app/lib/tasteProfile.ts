@@ -198,6 +198,16 @@ const AESTHETIC_KEYWORDS: Record<string, string> = {
   grunge: "grunge",
 };
 
+/** Canonical, deduplicated set of aesthetic tag values from AESTHETIC_KEYWORDS above — the
+ *  single vocabulary shared by onboarding styles, Pinterest signal extraction, and (via
+ *  scoreAffinity) anything scoring a candidate's tags against a user's taste profile,
+ *  including the trend digest's tags field. Keep in sync with AESTHETIC_KEYWORDS. */
+export const CANONICAL_AESTHETIC_TAGS = [
+  "minimal", "streetwear", "romantic", "classic", "edgy", "boho", "oldmoney",
+  "coastal", "formal", "workwear", "preppy", "sporty", "cute", "colorful",
+  "vintage", "grunge",
+];
+
 const CATEGORY_KEYWORDS: Record<string, string> = {
   dress: "dress", dresses: "dress",
   trouser: "trouser", trousers: "trouser", pants: "trouser", pant: "trouser",

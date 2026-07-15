@@ -24,6 +24,21 @@ export type RawMatch = {
   [key: string]: unknown;
 };
 
+// Shared by /api/for-you and /api/trend-picks, which both ask the model for
+// lines in the controlled format "... at <Store> [<search term>]" rather than
+// scanning free-form chat text the way extractStoreLinks() does. Store name
+// uses [^\[\]] rather than a Latin-only class so accented names (Polène,
+// Sézane, Totème) still match — an earlier ASCII-only class silently dropped
+// every pick at those stores.
+const ITEM_SENTENCE_PATTERN = /^(.*?)\s+at\s+([^[\]]+?)\s*\[([^\]]{2,40})\]\s*$/i;
+
+export function parseItemSentence(itemSentence: string): { name: string; store: string } | null {
+  const m = itemSentence.match(ITEM_SENTENCE_PATTERN);
+  if (!m) return null;
+  const [, , storeName, searchTerm] = m;
+  return { name: searchTerm.trim(), store: storeName.trim() };
+}
+
 function normalizeStoreName(s: string): string {
   return s.toLowerCase().replace(/[^a-z0-9]/g, "");
 }

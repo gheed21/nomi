@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { getCategoryExpertise } from "@/app/lib/smeKnowledge";
 import { buildTasteSection, buildFeedbackSection, type TasteProfile, type FeedbackStore } from "@/app/lib/tasteProfile";
-import { enrichMatchesWithImages } from "@/app/lib/serpImages";
+import { enrichMatchesWithImages, parseItemSentence } from "@/app/lib/serpImages";
 
 const client = new Anthropic();
 
@@ -55,13 +55,6 @@ export async function POST(req: NextRequest) {
 
     const text = message.content[0].type === "text" ? message.content[0].text : "";
 
-    // Item sentences are in our own controlled format — "... at <Store> [<search term>]" —
-    // so parse the store + search term directly rather than scanning for known store names
-    // the way extractStoreLinks does for free-form chat text. Store name uses [^\[\]]
-    // rather than a Latin-only class so accented names (Polène, Sézane, Totème) still
-    // match — an earlier ASCII-only class silently dropped every pick at those stores.
-    const ITEM_PATTERN = /^(.*?)\s+at\s+([^[\]]+?)\s*\[([^\]]{2,40})\]\s*$/i;
-
     const parsed = text
       .split("\n")
       .map(line => line.trim())
@@ -72,11 +65,10 @@ export async function POST(req: NextRequest) {
         const [kindRaw, reason, itemSentence] = parts;
         const kind: "match" | "different" = kindRaw.toLowerCase() === "different" ? "different" : "match";
 
-        const m = itemSentence.match(ITEM_PATTERN);
-        if (!m) return null;
-        const [, , storeName, searchTerm] = m;
+        const item = parseItemSentence(itemSentence);
+        if (!item) return null;
 
-        return { kind, reason, name: searchTerm.trim(), store: storeName.trim() };
+        return { kind, reason, ...item };
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
 

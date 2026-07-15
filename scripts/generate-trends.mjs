@@ -168,6 +168,16 @@ function dateDiffDays(date) {
 
 // ── Prompts ──────────────────────────────────────────────────────────────────
 
+// Keep in sync with CANONICAL_AESTHETIC_TAGS in app/lib/tasteProfile.ts — this
+// script runs standalone (plain Node, no build step) so it can't import that
+// TS module directly. This is the vocabulary scoreAffinity() uses to match a
+// trend against a user's taste profile, so "tags" must stick to this list.
+const CANONICAL_AESTHETIC_TAGS = [
+  "minimal", "streetwear", "romantic", "classic", "edgy", "boho", "oldmoney",
+  "coastal", "formal", "workwear", "preppy", "sporty", "cute", "colorful",
+  "vintage", "grunge",
+];
+
 function buildPrompts() {
   const today = todayString();
 
@@ -200,12 +210,34 @@ SOURCE ATTRIBUTION RULES — follow exactly:
 - If you cannot identify a specific article URL for a source, use that publication's homepage URL instead (e.g. "https://www.vogue.com").
 - Never omit a source entry — if you used a publication, it must appear with whatever URL you have.
 
+EDITORIAL ANALYSIS FIELDS — this digest is not just article links; it's an editorial
+intelligence layer that later gets matched against individual users' style profiles.
+For each trend item, also produce:
+- whyItMatters: ONE sentence explaining the significance of the trend — what it signals
+  about where fashion is heading, not a restatement of the summary. This is the
+  "so what" a stylist would tell a client, not more description of what was shown.
+- themeType: exactly one of "silhouette" | "color" | "fabric" | "styling" | "designer" |
+  "seasonal" | "cultural" — pick whichever is the DOMINANT axis of the trend.
+- tags: 1–3 values from this exact fixed vocabulary (lowercase, no others allowed):
+  ${CANONICAL_AESTHETIC_TAGS.join(", ")}
+  Only include a tag if the trend genuinely fits that aesthetic — it's fine to return
+  just 1 tag, or occasionally none, rather than forcing a weak match. These tags are
+  used to programmatically match trends against users' taste profiles, so precision
+  matters more than coverage.
+- keywords: 2–5 freeform, specific descriptive terms (silhouette names, colors, fabrics,
+  styling ideas) that don't fit the fixed tags vocabulary — e.g. "asymmetrical neckline",
+  "earthy palette", "oversized tailoring". These add texture beyond the fixed tags.
+
 OUTPUT FORMAT — return ONLY valid JSON, no markdown fences, no explanation before or after:
 {
   "trends": [
     {
       "title": "Short trend name (3–6 words)",
       "summary": "2–3 sentences paraphrasing the trend conversation. Be specific: mention garment types, colors, silhouettes, or designers drawing attention. Reference publications naturally within the text where relevant.",
+      "whyItMatters": "One sentence on why this matters / what it signals.",
+      "themeType": "silhouette | color | fabric | styling | designer | seasonal | cultural",
+      "tags": ["tag-from-fixed-vocabulary"],
+      "keywords": ["freeform descriptive term"],
       "sources": [
         { "name": "Publication Name", "url": "https://actual-article-url-from-search-results" }
       ]

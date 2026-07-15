@@ -4,6 +4,10 @@
     {
       "title": "Pharrell's Luxury Surf Codes",
       "summary": "The most-talked-about opening act of Paris Men's Fashion Week SS27 was Pharrell Williams staging a theatrical Louis Vuitton show around a towering artificial wave and real sand at the Cité Internationale Universitaire. The collection wove together monogrammed surfboards, technical wetsuits, cashmere cardigans styled as post-surf robes, and Hawaiian shirts, with denim and tailoring embellished in shells and precious stones — a restraint relative to prior seasons, but still a deliberate fusion of luxury craft with subcultural surf and skate energy. NSS Magazine noted that the show generated equal amounts of spectacle and controversy, drawing criticism for water waste on France's hottest recorded day.",
+      "whyItMatters": "Luxury houses are treating subculture-coded, off-duty pieces as covetable in their own right, not just resort filler — a cashmere cardigan styled as a post-surf robe is a shorthand for casual craftsmanship over pure formality.",
+      "themeType": "cultural",
+      "tags": ["coastal", "streetwear"],
+      "keywords": ["surf", "skate", "cashmere cardigan", "Hawaiian shirt"],
       "sources": [
         {
           "name": "NSS Magazine",
@@ -18,6 +22,10 @@
     {
       "title": "Jonathan Anderson's Dior Goes Out",
       "summary": "Jonathan Anderson's third menswear show for Dior at Paris Men's FW SS27, soundtracked by Fred Again and staged at the Musée Nissim de Camondo, pushed the house toward a vibrant going-out aesthetic. Loosened tuxedos, distressed denim, metallic shorts, and disco-inspired boots shared the runway with oversized knit pieces shot through with sparkle, colorful tote bags, and oversized bow ties — making accessories as collectible as the clothes. Wallpaper* editors on the ground described the invitation itself, a disco-ball-shaped charm, as a clue: Anderson appears to be chasing something looser, more celebratory, and more personality-driven than classic Dior tailoring.",
+      "whyItMatters": "Going-out dressing is loosening up — editors are reading this as a move away from strict tailoring toward celebratory, personality-driven pieces, with accessories treated as equally collectible as the clothing itself.",
+      "themeType": "styling",
+      "tags": ["edgy", "colorful"],
+      "keywords": ["disco", "metallic", "distressed denim", "sparkle knit"],
       "sources": [
         {
           "name": "Wallpaper*",
@@ -32,6 +40,10 @@
     {
       "title": "Debut Season: Burton, Rider, Rogge",
       "summary": "Paris Men's FW SS27 is being defined by a trio of highly anticipated creative director debuts. Sarah Burton showed her first dedicated Givenchy menswear collection at the house's Avenue George V headquarters, presenting butter-soft leather pieces, rugby shirts, and wide-leg trousers in blocks of pink and forest green, in dialogue with works by British artist Rachel Whiteread. Michael Rider's first full Celine runway show is regarded by NSS Magazine as the week's most closely watched — his vision described as 'fun, wearable' and possessing a 'playful sense of volume, decoration and colour.' Meanwhile, Belgian designer Meryll Rogge, winner of the 2025 Andam Prize, delivered a quietly impressive debut mixing layered bombers, floral prints, oversized knits, and striped bloomers through a personality-driven rather than trend-chasing lens.",
+      "whyItMatters": "Three major houses under new creative direction are all steering toward personality-driven, wearable design over trend-chasing — an early signal for where directional fashion moves next.",
+      "themeType": "designer",
+      "tags": ["colorful", "boho"],
+      "keywords": ["wide-leg trouser", "color block", "oversized knit", "floral print"],
       "sources": [
         {
           "name": "Wallpaper*",
@@ -50,6 +62,10 @@
     {
       "title": "Soshiotsuki: Tailoring's New Name",
       "summary": "The breakout emerging designer moment of Paris Men's FW SS27 belongs to Soshi Otsuki, whose label Soshiotsuki is making its Paris debut this week after winning the 2025 LVMH Prize. NSS Magazine calls him 'the true new addition of the season,' noting that the Bunka Fashion College graduate has built a cult following around oversized, precisely constructed tailoring that reinterprets classic menswear with near-military discipline. His Zara collaboration earlier in the year gave him broader visibility, but the Paris runway is the moment critics have been watching for — the first major assessment of whether his singular vision can scale.",
+      "whyItMatters": "A rising name worth knowing if you gravitate toward sharp, oversized tailoring — his rapid trajectory (LVMH Prize, a Zara collab, now a Paris debut) suggests this precise-but-relaxed silhouette is heading toward the mainstream.",
+      "themeType": "designer",
+      "tags": ["workwear", "edgy"],
+      "keywords": ["oversized tailoring", "military-inspired construction"],
       "sources": [
         {
           "name": "NSS Magazine",
@@ -64,6 +80,10 @@
     {
       "title": "Hermès Goes Gaucho, Earthy Palette Rises",
       "summary": "In lieu of its usual runway show — as Hermès transitions toward Grace Wales Bonner's directorial debut next January — the house's design team delivered a presentation built around the Gaucho, the itinerant horseman of the South American frontier. Wallpaper* editors on the ground reported high-waisted tapering slacks in bombacha style, classic Hermès silk scarves worn as rustic neckerchiefs, and a palette of dusty plains: earthy browns and muted teal punctuated by cacti and jumping-fence prints with a flash of lavender. The earthy, travel-inflected mood is one of the strongest recurring color stories across the week, and Hermès' grounded execution gives it real editorial credibility.",
+      "whyItMatters": "Earthy, travel-inflected color palettes are showing up as one of the strongest cross-brand signals this week — a move away from bright, maximalist color toward grounded neutrals with an unexpected twist.",
+      "themeType": "color",
+      "tags": ["oldmoney", "boho"],
+      "keywords": ["earthy palette", "high-waisted trouser", "silk scarf"],
       "sources": [
         {
           "name": "Wallpaper*",
@@ -74,6 +94,10 @@
     {
       "title": "World Cup Dressing Enters the Street",
       "summary": "With the FIFA World Cup underway across North America since June 11, Who What Wear's editors are tracking how soccer fandom is shaping real-world style this week. Jerseys are being styled with vintage Levi's, poplin skirts, and track pants; shorts are worn with bikini tops and ballet flats as people dress for matches. L.A. street-style microtrends reported this week by Who What Wear also include tube tops — returning as a Y2K staple — bug-eye sunglasses frames, and printed slip dresses in florals and polka dots, suggesting that the cultural moment of a global tournament is pulling fashion toward a louder, team-aligned, expressive summer register.",
+      "whyItMatters": "A major cultural moment is visibly reshaping everyday street style — worth tracking if you like dressing around real-world events rather than only runway cues.",
+      "themeType": "cultural",
+      "tags": ["sporty", "streetwear", "cute"],
+      "keywords": ["Y2K", "jersey styling", "polka dot"],
       "sources": [
         {
           "name": "Who What Wear",
