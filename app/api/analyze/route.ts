@@ -193,6 +193,24 @@ function resolveCategories(filters?: Filters): string[] {
   return [];
 }
 
+// Shared by buildSystemPrompt and buildTextSystemPrompt — was two separate inline
+// copies that had already drifted (one only checked the legacy singular
+// itemCategory field and silently dropped multi-select category filters
+// entirely). "Every suggestion must be one of these categories" is a hard
+// constraint, not just "at least one" — a looser "at least one from each"
+// phrasing let the model pad the remaining slot with an unrequested category.
+function buildCategorySection(filters?: Filters): string {
+  const cats = resolveCategories(filters);
+  if (!cats.length) return "";
+  const subs = filters?.itemSubcategories ?? [];
+  if (cats.length === 1) {
+    const subStr = subs.length ? `, specifically: ${subs.join(", ")}` : "";
+    return `\nItem type: The user is looking for ${cats[0]}${subStr}. All 3 of your suggestions must be ${cats[0]}.`;
+  }
+  // Multiple categories: distribute suggestions across them, and forbid any other category.
+  return `\nMultiple item types requested: The user wants suggestions spanning MULTIPLE categories — ${cats.join(" AND ")}${subs.length ? `, with these specific preferences: ${subs.join(", ")}` : ""}. Distribute your 3 suggestions to include at least one item from each requested category. Every single suggestion must be one of these requested categories — do not include any other category, even a seemingly complementary one like a bag or jewelry, unless it is explicitly one of the requested categories.`;
+}
+
 // Returns a hard exclusive constraint if the description says "only X" / "just X".
 // Maps keyword → human-readable category label for the prompt.
 const EXCLUSIVE_PROMPT_MAP: Array<[string[], string]> = [
@@ -270,25 +288,7 @@ If the user's free text doesn't clearly map to a specific category, exclusion, o
 User's specific request: "${filters.description.trim()}". For each suggested piece, explicitly reference the user's words or vibe in the reason field — explain how this item delivers on their request. Do not describe the item in isolation.`
     : "";
 
-  const categorySection = (() => {
-    const cats = resolveCategories(filters);
-    if (!cats.length) return "";
-    const subs = filters?.itemSubcategories ?? [];
-    if (cats.length === 1) {
-      const subStr = subs.length ? `, specifically: ${subs.join(", ")}` : "";
-      return `\nItem type: The user is looking for ${cats[0]}${subStr}. All 3 of your suggestions must be ${cats[0]}.`;
-    }
-    // Multiple categories: distribute suggestions across them
-    const catDetails = cats.map(cat => {
-      const catSubs = subs.filter(s => {
-        // Sub belongs to a category if its name appears in that category's typical items
-        // (subcategory names are globally unique across categories in this app)
-        return true; // model knows which subs map to which category
-      });
-      return catSubs.length ? `${cat} (e.g. ${catSubs.join(", ")})` : cat;
-    });
-    return `\nMultiple item types requested: The user wants suggestions spanning MULTIPLE categories — ${cats.join(" AND ")}${subs.length ? `, with these specific preferences: ${subs.join(", ")}` : ""}. Distribute your 3 suggestions to include at least one item from each requested category. Do not put all 3 suggestions into a single category.`;
-  })();
+  const categorySection = buildCategorySection(filters);
 
   const exclusiveConstraint = detectExclusiveConstraint(filters);
 
@@ -458,12 +458,7 @@ function buildTextSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | 
     return s;
   })();
 
-  const categorySection = (() => {
-    if (!filters?.itemCategory) return "";
-    const subs = filters.itemSubcategories?.length
-      ? `, specifically: ${filters.itemSubcategories.join(", ")}` : "";
-    return `\nItem type: The user is looking for ${filters.itemCategory}${subs}. At least one suggestion must match this type.`;
-  })();
+  const categorySection = buildCategorySection(filters);
 
   const secondhandSection = filters?.secondhandOnly
     ? "\nPrioritize secondhand and resale platforms like Depop, Vinted, Poshmark, ThredUp. Use new retail as a fallback only if no secondhand option fits." : "";
