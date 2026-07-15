@@ -47,6 +47,19 @@ const LIFE_STAGE_OPTIONS  = ["Student", "Early career", "Established", "Prefer n
 const SHOPPING_TIER_OPTIONS = ["Mostly mid-market", "Occasional luxury splurges", "Primarily luxury"];
 const SIZING_CATEGORIES   = ["Tops", "Bottoms", "Dresses", "Jumpsuits", "Shoes", "Outerwear"];
 
+// Bottoms sizing is genuinely ambiguous (letter vs numeric waist/inseam vary by
+// gender and store), so it gets the same letter-size row as everything else -
+// the free-text fallback below each row is what actually covers waist/inseam,
+// EU/UK sizes, or anything else that doesn't fit a standard letter/number.
+const SIZE_OPTIONS: Record<string, string[]> = {
+  Tops:      ["XS", "S", "M", "L", "XL", "XXL"],
+  Bottoms:   ["XS", "S", "M", "L", "XL", "XXL"],
+  Dresses:   ["XS", "S", "M", "L", "XL", "XXL"],
+  Jumpsuits: ["XS", "S", "M", "L", "XL", "XXL"],
+  Shoes:     ["6", "6.5", "7", "7.5", "8", "8.5", "9", "9.5", "10", "10.5", "11", "12"],
+  Outerwear: ["XS", "S", "M", "L", "XL", "XXL"],
+};
+
 const FIT_CHIPS = [
   "Fitted waist", "Relaxed fit", "Oversized", "Tailored",
   "High-waisted", "Highlights shoulders", "Flowy", "Cropped",
@@ -476,19 +489,36 @@ export default function Onboarding({ onComplete }: Props) {
 
               {/* 5 — Sizing */}
               <FieldLabel>Your sizes</FieldLabel>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                 {SIZING_CATEGORIES.map(cat => (
                   <div key={cat}>
-                    <p style={{ fontSize: "12px", color: "#888", marginBottom: "5px", fontWeight: 500 }}>{cat}</p>
+                    <p style={{ fontSize: "12px", color: "#888", marginBottom: "6px", fontWeight: 500 }}>{cat}</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "6px" }}>
+                      {SIZE_OPTIONS[cat].map(opt => {
+                        const on = sizing[cat] === opt;
+                        return (
+                          <button key={opt} onClick={() => setSizing(prev => ({ ...prev, [cat]: on ? "" : opt }))} style={{
+                            padding: "6px 13px", borderRadius: "20px",
+                            border: `1.5px solid ${on ? "#c9a96e" : "#e8e8e8"}`,
+                            background: on ? "#f7f0e4" : "#fff",
+                            color: on ? "#c9a96e" : "#444",
+                            fontSize: "13px", fontWeight: on ? 600 : 500,
+                            cursor: "pointer", transition: "all 0.12s",
+                          }}>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
                     <input
                       type="text"
-                      placeholder={cat === "Shoes" ? "e.g. 9" : "e.g. M"}
+                      placeholder="Or type your own (e.g. 32x30, EU 38)"
                       value={sizing[cat] ?? ""}
                       onChange={e => setSizing(prev => ({ ...prev, [cat]: e.target.value }))}
                       style={{
-                        width: "100%", padding: "10px 14px", borderRadius: "12px",
+                        width: "100%", padding: "9px 14px", borderRadius: "12px",
                         border: `1.5px solid ${sizing[cat] ? "#c9a96e" : "#e8e8e8"}`,
-                        fontSize: "14px", color: "#000", background: "#fff",
+                        fontSize: "13px", color: "#000", background: "#fff",
                         transition: "border-color 0.15s", fontFamily: "inherit",
                         outline: "none", boxSizing: "border-box",
                       }}
