@@ -286,6 +286,17 @@ const COLOR_FAMILIES: string[][] = [
   ["yellow", "mustard", "gold", "lemon"],
 ];
 
+// Rotates while waiting on /api/analyze so the wait reads as real work being
+// done rather than a stuck spinner. "80+ stores" matches the actual combined
+// size of STORE_SEARCH + FALLBACK_STORES in app/lib/storeSearch.ts, not a
+// made-up number.
+const LOADING_MESSAGES = [
+  "Nomi is styling this...",
+  "Comparing pieces across 80+ stores...",
+  "Matching your style and budget...",
+  "Almost ready...",
+];
+
 function colorFamilyIndex(color?: string): number {
   if (!color) return -1;
   const l = color.toLowerCase();
@@ -403,6 +414,14 @@ export default function ResultsPage() {
   const [confirmReset,    setConfirmReset]    = useState(false);
   const [loadingMore,     setLoadingMore]     = useState(false);
   const [seenNames,       setSeenNames]       = useState<string[]>([]);
+  const [loadingStep,     setLoadingStep]     = useState(0);
+
+  useEffect(() => {
+    if (result || error) return;
+    setLoadingStep(0);
+    const id = setInterval(() => setLoadingStep(s => (s + 1) % LOADING_MESSAGES.length), 1800);
+    return () => clearInterval(id);
+  }, [result, error]);
 
   useEffect(() => {
     // Pre-load saved names from looks (new model) + legacy flat items for backward compat
@@ -781,7 +800,7 @@ export default function ResultsPage() {
           {!result && !error && (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <p style={{ fontSize: "13px", fontWeight: 500, color: "#c9a96e", marginBottom: "4px", animation: "nomi-pulse 1.8s ease-in-out infinite" }}>
-                Nomi is styling this...
+                {LOADING_MESSAGES[loadingStep]}
               </p>
               <SkeletonCard /><SkeletonCard /><SkeletonCard />
             </div>

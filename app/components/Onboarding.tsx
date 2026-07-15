@@ -52,6 +52,29 @@ const FIT_CHIPS = [
   "High-waisted", "Highlights shoulders", "Flowy", "Cropped",
 ];
 
+const NEVER_WEAR_CHIPS = [
+  "Heels", "Crop tops", "Sleeveless", "Strapless", "Off shoulder",
+  "Bodycon", "Mini skirts", "Plunging necklines", "Sequins", "Florals",
+  "Loud prints", "Cutouts",
+];
+
+// Shared by the fit-preference and never-wear chip rows - both are free-text
+// fields where chips are just a quick-tap shortcut, so toggling a chip means
+// adding/removing its label from the comma-separated text rather than
+// replacing the field with a fixed set of options.
+function toggleChipInCsv(current: string, label: string): string {
+  const segments = current.split(",").map(s => s.trim()).filter(Boolean);
+  const has = segments.some(s => s.toLowerCase() === label.toLowerCase());
+  const next = has
+    ? segments.filter(s => s.toLowerCase() !== label.toLowerCase())
+    : [...segments, label];
+  return next.join(", ");
+}
+
+function isChipActive(current: string, label: string): boolean {
+  return current.split(",").map(s => s.trim().toLowerCase()).includes(label.toLowerCase());
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Onboarding({ onComplete }: Props) {
@@ -73,16 +96,12 @@ export default function Onboarding({ onComplete }: Props) {
     setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
   }
 
-  // Fit preferences stays a free-text field (fits vary too much by garment type
-  // for a fixed set of photos to represent well) - these chips are just a
-  // quick-tap shortcut that adds to the text, not a replacement for it.
   function toggleFitChip(label: string) {
-    const segments = fitPreferences.split(",").map(s => s.trim()).filter(Boolean);
-    const has = segments.some(s => s.toLowerCase() === label.toLowerCase());
-    const next = has
-      ? segments.filter(s => s.toLowerCase() !== label.toLowerCase())
-      : [...segments, label];
-    setFitPreferences(next.join(", "));
+    setFitPreferences(prev => toggleChipInCsv(prev, label));
+  }
+
+  function toggleNeverWearChip(label: string) {
+    setNeverWear(prev => toggleChipInCsv(prev, label));
   }
 
   function finish() {
@@ -279,6 +298,27 @@ export default function Onboarding({ onComplete }: Props) {
 
               {/* 3 — Anything you never wear? */}
               <FieldLabel>Anything you never wear?</FieldLabel>
+              <p style={{ fontSize: "12px", color: "#aaa", marginTop: "-6px", marginBottom: "10px", lineHeight: 1.5 }}>
+                Tell us what to leave out of your recommendations.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
+                {NEVER_WEAR_CHIPS.map(chip => {
+                  const on = isChipActive(neverWear, chip);
+                  return (
+                    <button key={chip} onClick={() => toggleNeverWearChip(chip)} style={{
+                      padding: "7px 14px", borderRadius: "99px", border: "none",
+                      background: on ? "#c9a96e" : "#f0ede8",
+                      color: on ? "#fff" : "#6b6b6b",
+                      fontSize: "13px", fontWeight: on ? 600 : 400,
+                      cursor: "pointer", whiteSpace: "nowrap",
+                      transition: "background 0.15s, color 0.15s",
+                      fontFamily: "inherit",
+                    }}>
+                      {chip}
+                    </button>
+                  );
+                })}
+              </div>
               <textarea
                 placeholder="e.g. heels, crop tops, anything sleeveless, loud prints..."
                 value={neverWear}
@@ -404,7 +444,7 @@ export default function Onboarding({ onComplete }: Props) {
               <FieldLabel>Fits you feel confident in</FieldLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
                 {FIT_CHIPS.map(chip => {
-                  const on = fitPreferences.split(",").map(s => s.trim().toLowerCase()).includes(chip.toLowerCase());
+                  const on = isChipActive(fitPreferences, chip);
                   return (
                     <button key={chip} onClick={() => toggleFitChip(chip)} style={{
                       padding: "7px 14px", borderRadius: "99px", border: "none",
