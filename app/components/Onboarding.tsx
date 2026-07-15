@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { recordTasteSignals } from "../lib/tasteProfile";
 
 // ─── Types / constants ────────────────────────────────────────────────────────
 
@@ -104,6 +105,22 @@ export default function Onboarding({ onComplete }: Props) {
   const [styleInfluencers, setStyleInfluencers] = useState("");
   const [fitPreferences,   setFitPreferences]   = useState("");
   const [sizing,           setSizing]           = useState<Record<string, string>>({});
+  const [styleUploads,     setStyleUploads]     = useState<string[]>([]); // data URLs, capped at 5 — analyzed then discarded, never persisted
+  const [analyzingStyle,   setAnalyzingStyle]   = useState(false);
+
+  function addStyleUpload(file: File) {
+    if (!file.type.startsWith("image/") || styleUploads.length >= 5) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const dataUrl = e.target?.result as string;
+      setStyleUploads(prev => prev.length >= 5 ? prev : [...prev, dataUrl]);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeStyleUpload(i: number) {
+    setStyleUploads(prev => prev.filter((_, idx) => idx !== i));
+  }
 
   function toggleStyle(s: string) {
     setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
@@ -117,7 +134,7 @@ export default function Onboarding({ onComplete }: Props) {
     setNeverWear(prev => toggleChipInCsv(prev, label));
   }
 
-  function finish() {
+  async function finish() {
     const filteredSizing = Object.fromEntries(
       Object.entries(sizing).filter(([, v]) => v.trim())
     );
@@ -136,14 +153,39 @@ export default function Onboarding({ onComplete }: Props) {
       ...(fitPreferences.trim()                  && { fitPreferences: fitPreferences.trim() }),
       ...(Object.keys(filteredSizing).length > 0 && { sizing: filteredSizing }),
     };
+    // Write the explicit onboarding fields first — recordTasteSignals() below
+    // does a read-modify-write on top of whatever's already in localStorage,
+    // so it has to run after this or its merge would be overwritten.
     localStorage.setItem("nomi_taste_profile", JSON.stringify(profile));
     const existing = JSON.parse(localStorage.getItem("nomi_current_filters") ?? "{}");
     localStorage.setItem("nomi_current_filters", JSON.stringify({ ...existing, priceRange }));
+
+    if (styleUploads.length > 0) {
+      setAnalyzingStyle(true);
+      const settled = await Promise.allSettled(
+        styleUploads.map(image =>
+          fetch("/api/analyze-style", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image }),
+          }).then(r => r.json())
+        )
+      );
+      const signals = settled
+        .filter((r): r is PromiseFulfilledResult<{ category?: string; color?: string; aesthetic?: string }> => r.status === "fulfilled")
+        .map(r => r.value)
+        .filter(v => v.category || v.color || v.aesthetic);
+      if (signals.length) recordTasteSignals(signals);
+      setAnalyzingStyle(false);
+    }
+
     localStorage.setItem("nomi-onboarded", "true");
     onComplete();
   }
 
-  const primaryLabel = screen === 0 ? "Get started" : screen < TOTAL_SCREENS - 1 ? "Next" : "Start styling";
+  const primaryLabel = analyzingStyle
+    ? "Analyzing your style…"
+    : screen === 0 ? "Get started" : screen < TOTAL_SCREENS - 1 ? "Next" : "Start styling";
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "#fff", zIndex: 500, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -308,6 +350,41 @@ export default function Onboarding({ onComplete }: Props) {
                   fontFamily: "inherit", lineHeight: 1.55, marginBottom: "24px", outline: "none",
                 }}
               />
+
+              {/* 2.5 — Upload outfits you've worn */}
+              <FieldLabel>Upload outfits you&apos;ve worn and loved</FieldLabel>
+              <p style={{ fontSize: "12px", color: "#aaa", marginTop: "-6px", marginBottom: "10px", lineHeight: 1.5 }}>
+                Optional — up to 5 photos. We learn your style from them; the photos themselves aren&apos;t saved.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "24px" }}>
+                {styleUploads.map((src, i) => (
+                  <div key={i} style={{ position: "relative", width: "72px", height: "72px", borderRadius: "12px", overflow: "hidden", background: "#f0ede8" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <button onClick={() => removeStyleUpload(i)} style={{
+                      position: "absolute", top: "3px", right: "3px", width: "18px", height: "18px",
+                      borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.55)", color: "#fff",
+                      fontSize: "11px", lineHeight: "18px", textAlign: "center", cursor: "pointer", padding: 0,
+                    }}>
+                      ×
+                    </button>
+                  </div>
+                ))}
+                {styleUploads.length < 5 && (
+                  <label style={{
+                    width: "72px", height: "72px", borderRadius: "12px",
+                    border: "1.5px dashed #e0dbd4", background: "#faf9f7",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: "22px", color: "#c9a96e", cursor: "pointer",
+                  }}>
+                    +
+                    <input
+                      type="file" accept="image/*" style={{ display: "none" }}
+                      onChange={e => { const f = e.target.files?.[0]; if (f) addStyleUpload(f); e.target.value = ""; }}
+                    />
+                  </label>
+                )}
+              </div>
 
               {/* 3 — Anything you never wear? */}
               <FieldLabel>Anything you never wear?</FieldLabel>
@@ -560,10 +637,11 @@ export default function Onboarding({ onComplete }: Props) {
           {/* Primary button */}
           <button
             onClick={() => screen < TOTAL_SCREENS - 1 ? setScreen(s => s + 1) : finish()}
+            disabled={analyzingStyle}
             style={{
               width: "100%", padding: "16px", borderRadius: "16px", border: "none",
-              background: "#c9a96e", color: "#fff",
-              fontSize: "15px", fontWeight: 600, cursor: "pointer", letterSpacing: "-0.1px",
+              background: "#c9a96e", color: "#fff", opacity: analyzingStyle ? 0.7 : 1,
+              fontSize: "15px", fontWeight: 600, cursor: analyzingStyle ? "default" : "pointer", letterSpacing: "-0.1px",
             }}
           >
             {primaryLabel}
