@@ -31,6 +31,7 @@ const MENS_STYLE_OPTIONS: StyleOption[] = [
   { key: "coastal",    label: "Coastal",           image: "/styles/mens-coastal.png"    },
   { key: "formal",     label: "Formal",            image: "/styles/mens-formal.png"     },
   { key: "workwear",   label: "Workwear",          image: "/styles/mens-workwear.png"   },
+  { key: "sporty",     label: "Sporty",            image: "/styles/mens-sporty.png"     },
 ];
 
 function styleOptionsFor(gender: string): StyleOption[] {
@@ -61,16 +62,40 @@ const SIZE_OPTIONS: Record<string, string[]> = {
   Outerwear: ["XS", "S", "M", "L", "XL", "XXL"],
 };
 
-const FIT_CHIPS = [
+// Both chip rows used to be one gender-agnostic list, which meant menswear
+// profiles got womenswear-specific chips ("Mini skirts", "Bodycon", "Highlights
+// shoulders", etc.) that don't apply. Split the same way styleOptionsFor()
+// already splits style tiles, with the same "Women's, All, or unselected"
+// fallback convention.
+const WOMENS_FIT_CHIPS = [
   "Fitted waist", "Relaxed fit", "Oversized", "Tailored",
   "High-waisted", "Highlights shoulders", "Flowy", "Cropped",
 ];
 
-const NEVER_WEAR_CHIPS = [
+const MENS_FIT_CHIPS = [
+  "Relaxed fit", "Oversized", "Tailored", "Slim fit", "Straight leg", "Cropped",
+];
+
+function fitChipsFor(gender: string): string[] {
+  if (gender === "Men's") return MENS_FIT_CHIPS;
+  return WOMENS_FIT_CHIPS;
+}
+
+const WOMENS_NEVER_WEAR_CHIPS = [
   "Heels", "Crop tops", "Sleeveless", "Strapless", "Off shoulder",
   "Bodycon", "Mini skirts", "Plunging necklines", "Sequins", "Florals",
   "Loud prints", "Cutouts",
 ];
+
+const MENS_NEVER_WEAR_CHIPS = [
+  "Skinny fit", "Graphic tees", "Tank tops", "Shorts", "Sandals",
+  "Logos", "Bright colors", "Cargo pants", "Sleeveless", "Loud prints",
+];
+
+function neverWearChipsFor(gender: string): string[] {
+  if (gender === "Men's") return MENS_NEVER_WEAR_CHIPS;
+  return WOMENS_NEVER_WEAR_CHIPS;
+}
 
 // Shared by the fit-preference and never-wear chip rows - both are free-text
 // fields where chips are just a quick-tap shortcut, so toggling a chip means
@@ -392,7 +417,7 @@ export default function Onboarding({ onComplete }: Props) {
                 Tell us what to leave out of your recommendations.
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-                {NEVER_WEAR_CHIPS.map(chip => {
+                {neverWearChipsFor(gender).map(chip => {
                   const on = isChipActive(neverWear, chip);
                   return (
                     <button key={chip} onClick={() => toggleNeverWearChip(chip)} style={{
@@ -410,7 +435,7 @@ export default function Onboarding({ onComplete }: Props) {
                 })}
               </div>
               <textarea
-                placeholder="e.g. heels, crop tops, anything sleeveless, loud prints..."
+                placeholder={gender === "Men's" ? "e.g. skinny fit, graphic tees, loud prints..." : "e.g. heels, crop tops, anything sleeveless, loud prints..."}
                 value={neverWear}
                 onChange={e => setNeverWear(e.target.value)}
                 rows={3}
@@ -533,7 +558,7 @@ export default function Onboarding({ onComplete }: Props) {
               {/* 4 — Fit preferences */}
               <FieldLabel>Fits you feel confident in</FieldLabel>
               <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "10px" }}>
-                {FIT_CHIPS.map(chip => {
+                {fitChipsFor(gender).map(chip => {
                   const on = isChipActive(fitPreferences, chip);
                   return (
                     <button key={chip} onClick={() => toggleFitChip(chip)} style={{
@@ -551,7 +576,7 @@ export default function Onboarding({ onComplete }: Props) {
                 })}
               </div>
               <textarea
-                placeholder="Any fits you feel most confident in? (e.g. fitted waist, relaxed fit, highlighting shoulders)"
+                placeholder={gender === "Men's" ? "Any fits you feel most confident in? (e.g. relaxed fit, tailored, slim fit)" : "Any fits you feel most confident in? (e.g. fitted waist, relaxed fit, highlighting shoulders)"}
                 value={fitPreferences}
                 onChange={e => setFitPreferences(e.target.value)}
                 rows={2}
