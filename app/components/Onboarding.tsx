@@ -13,30 +13,49 @@ type Props = { onComplete: () => void };
 type StyleOption = { key: string; label: string; image: string };
 
 const WOMENS_STYLE_OPTIONS: StyleOption[] = [
-  { key: "minimal",    label: "Clean & minimal",  image: "/styles/minimal.png"    },
-  { key: "streetwear", label: "Streetwear",        image: "/styles/streetwear.png" },
-  { key: "romantic",   label: "Soft & romantic",   image: "/styles/romantic.png"   },
-  { key: "classic",    label: "Timeless classic",  image: "/styles/classic.png"    },
-  { key: "edgy",       label: "Edgy",              image: "/styles/edgy.png"       },
-  { key: "boho",       label: "Boho",              image: "/styles/boho.png"       },
-  { key: "oldmoney",   label: "Old money",         image: "/styles/oldmoney.png"   },
-  { key: "coastal",    label: "Coastal",           image: "/styles/coastal.png"    },
+  { key: "minimal",    label: "Less-is-more",              image: "/styles/minimal.png"    },
+  { key: "streetwear", label: "Off-duty cool",              image: "/styles/streetwear.png" },
+  { key: "romantic",   label: "Hopeless romantic",          image: "/styles/romantic.png"   },
+  { key: "classic",    label: "Never goes out of style",    image: "/styles/classic.png"    },
+  { key: "edgy",       label: "Rebel spirit",               image: "/styles/edgy.png"       },
+  { key: "boho",       label: "Free spirit",                image: "/styles/boho.png"       },
+  { key: "oldmoney",   label: "Quiet luxury",               image: "/styles/oldmoney.png"   },
+  { key: "coastal",    label: "Beach day energy",           image: "/styles/coastal.png"    },
 ];
 
 const MENS_STYLE_OPTIONS: StyleOption[] = [
-  { key: "minimal",    label: "Clean & minimal",  image: "/styles/mens-minimal.png"    },
-  { key: "streetwear", label: "Streetwear",        image: "/styles/mens-streetwear.png" },
-  { key: "classic",    label: "Timeless classic",  image: "/styles/mens-classic.png"    },
-  { key: "edgy",       label: "Edgy",              image: "/styles/mens-edgy.png"       },
-  { key: "coastal",    label: "Coastal",           image: "/styles/mens-coastal.png"    },
-  { key: "formal",     label: "Formal",            image: "/styles/mens-formal.png"     },
-  { key: "workwear",   label: "Workwear",          image: "/styles/mens-workwear.png"   },
-  { key: "sporty",     label: "Sporty",            image: "/styles/mens-sporty.png"     },
+  { key: "minimal",    label: "Less-is-more",              image: "/styles/mens-minimal.png"    },
+  { key: "streetwear", label: "Off-duty cool",              image: "/styles/mens-streetwear.png" },
+  { key: "classic",    label: "Never goes out of style",    image: "/styles/mens-classic.png"    },
+  { key: "edgy",       label: "Rebel spirit",               image: "/styles/mens-edgy.png"       },
+  { key: "coastal",    label: "Beach day energy",           image: "/styles/mens-coastal.png"    },
+  { key: "formal",     label: "Suited & booted",            image: "/styles/mens-formal.png"     },
+  { key: "workwear",   label: "Built to work",              image: "/styles/mens-workwear.png"   },
+  { key: "sporty",     label: "Game day ready",            image: "/styles/mens-sporty.png"     },
+];
+
+// De-duplicated union for "All" — the 5 categories that exist in both lists
+// (minimal/streetwear/classic/edgy) show once rather than twice for the same
+// underlying key, plus each gender's unique categories. Coastal is dropped
+// here (kept in the Women's/Men's lists) purely to land on an even 10 instead
+// of an odd 11, which would leave the last tile alone in the 2-col grid.
+const ALL_STYLE_OPTIONS: StyleOption[] = [
+  { key: "minimal",    label: "Less-is-more",              image: "/styles/minimal.png"    },
+  { key: "streetwear", label: "Off-duty cool",              image: "/styles/streetwear.png" },
+  { key: "classic",    label: "Never goes out of style",    image: "/styles/classic.png"    },
+  { key: "edgy",       label: "Rebel spirit",               image: "/styles/edgy.png"       },
+  { key: "romantic",   label: "Hopeless romantic",          image: "/styles/romantic.png"   },
+  { key: "boho",       label: "Free spirit",                image: "/styles/boho.png"       },
+  { key: "oldmoney",   label: "Quiet luxury",               image: "/styles/oldmoney.png"   },
+  { key: "formal",     label: "Suited & booted",            image: "/styles/mens-formal.png"     },
+  { key: "workwear",   label: "Built to work",              image: "/styles/mens-workwear.png"   },
+  { key: "sporty",     label: "Game day ready",             image: "/styles/mens-sporty.png"     },
 ];
 
 function styleOptionsFor(gender: string): StyleOption[] {
-  if (gender === "Men's") return MENS_STYLE_OPTIONS;
-  return WOMENS_STYLE_OPTIONS; // Women's, All, or unselected
+  if (gender === "Men's")   return MENS_STYLE_OPTIONS;
+  if (gender === "Women's") return WOMENS_STYLE_OPTIONS;
+  return ALL_STYLE_OPTIONS; // "All" or unselected
 }
 
 const GENDER_OPTIONS = ["Women's", "Men's", "All"];
@@ -324,28 +343,36 @@ export default function Onboarding({ onComplete }: Props) {
                 {styleOptionsFor(gender).map(({ key, image, label }) => {
                   const on = styles.includes(key);
                   return (
-                    <button key={key} onClick={() => toggleStyle(key)} style={{
-                      position: "relative", aspectRatio: "1", borderRadius: "12px",
-                      border: on ? "2.5px solid #c9a96e" : "none",
-                      padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
-                      transition: "border-color 0.12s",
-                    }}>
-                      <StyleTileImage src={image} label={label} />
-                      <div style={{
-                        position: "absolute", top: "6px", right: "6px",
-                        width: "20px", height: "20px", borderRadius: "50%",
-                        background: on ? "#c9a96e" : "rgba(255,255,255,0.35)",
-                        border: on ? "none" : "1.5px solid rgba(255,255,255,0.85)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        transition: "background 0.12s",
+                    <div key={key}>
+                      <button onClick={() => toggleStyle(key)} style={{
+                        position: "relative", width: "100%", aspectRatio: "1", borderRadius: "12px",
+                        border: on ? "2.5px solid #c9a96e" : "none",
+                        padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
+                        transition: "border-color 0.12s", display: "block",
                       }}>
-                        {on && (
-                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                            <path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        )}
-                      </div>
-                    </button>
+                        <StyleTileImage src={image} label={label} />
+                        <div style={{
+                          position: "absolute", top: "6px", right: "6px",
+                          width: "20px", height: "20px", borderRadius: "50%",
+                          background: on ? "#c9a96e" : "rgba(255,255,255,0.35)",
+                          border: on ? "none" : "1.5px solid rgba(255,255,255,0.85)",
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          transition: "background 0.12s",
+                        }}>
+                          {on && (
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                              <path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                      <p style={{
+                        fontSize: "12px", color: on ? "#c9a96e" : "#888", fontWeight: on ? 600 : 500,
+                        textAlign: "center", marginTop: "6px", transition: "color 0.12s",
+                      }}>
+                        {label}
+                      </p>
+                    </div>
                   );
                 })}
               </div>
