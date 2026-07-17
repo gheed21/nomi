@@ -60,7 +60,8 @@ function styleOptionsFor(gender: string): StyleOption[] {
 
 const GENDER_OPTIONS = ["Women's", "Men's", "All"];
 
-const TOTAL_SCREENS = 5;
+const TOTAL_SCREENS = 6;
+const SCREEN_WIDTH = `${100 / TOTAL_SCREENS}%`;
 
 const PRICE_MAX = 1000;
 
@@ -262,7 +263,7 @@ export default function Onboarding({ onComplete }: Props) {
           }}>
 
             {/* ── Screen 1 — What Nomi does ── */}
-            <div style={{ width: "20%", height: "100%", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 28px 16px" }}>
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", padding: "52px 28px 16px" }}>
               <p style={{ fontSize: "44px", fontWeight: 500, letterSpacing: "-2px", color: "#c9a96e", lineHeight: 1, marginBottom: "16px" }}>nomi.</p>
               <h1 style={{ fontSize: "32px", fontWeight: 700, letterSpacing: "-0.8px", color: "#000", textAlign: "center", marginBottom: "14px", lineHeight: 1.15 }}>
                 Your AI stylist.
@@ -274,7 +275,7 @@ export default function Onboarding({ onComplete }: Props) {
             </div>
 
             {/* ── Screen 2 — How it works ── */}
-            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "60px 28px 120px" }}>
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", padding: "60px 28px 120px" }}>
               <h2 style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "-0.7px", color: "#000", marginBottom: "40px", lineHeight: 1.2 }}>
                 How it works
               </h2>
@@ -304,7 +305,7 @@ export default function Onboarding({ onComplete }: Props) {
             </div>
 
             {/* ── Screen 3 — Who are you shopping for? ── */}
-            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — helps Nomi show you the right styles.
               </p>
@@ -331,7 +332,7 @@ export default function Onboarding({ onComplete }: Props) {
             </div>
 
             {/* ── Screen 4 — Make it yours ── */}
-            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — helps Nomi match your taste from day one.
               </p>
@@ -373,9 +374,19 @@ export default function Onboarding({ onComplete }: Props) {
                   border: `1.5px solid ${styleDesc ? "#c9a96e" : "#e8e8e8"}`,
                   fontSize: "14px", color: "#000", background: "#fff",
                   transition: "border-color 0.15s", resize: "none",
-                  fontFamily: "inherit", lineHeight: 1.55, marginBottom: "24px", outline: "none",
+                  fontFamily: "inherit", lineHeight: 1.55, outline: "none",
                 }}
               />
+            </div>
+
+            {/* ── Screen 5 — Fine-tune your taste ── */}
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+              <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
+                Optional — the more detail, the better your matches.
+              </p>
+              <h2 style={{ fontSize: "26px", fontWeight: 700, letterSpacing: "-0.6px", color: "#000", marginBottom: "18px", lineHeight: 1.2 }}>
+                Fine-tune your taste
+              </h2>
 
               {/* 2.5 — Upload outfits you've worn */}
               <FieldLabel>Upload outfits you&apos;ve worn and loved</FieldLabel>
@@ -463,8 +474,8 @@ export default function Onboarding({ onComplete }: Props) {
               <PriceRangeSlider value={priceRange} onChange={setPriceRange} />
             </div>
 
-            {/* ── Screen 5 — A little more about you ── */}
-            <div style={{ width: "20%", height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
+            {/* ── Screen 6 — A little more about you ── */}
+            <div style={{ width: SCREEN_WIDTH, height: "100%", overflowY: "auto", padding: "52px 28px 32px" }}>
               <p style={{ fontSize: "12px", color: "#bbb", marginBottom: "10px", letterSpacing: "0.2px", lineHeight: 1.5 }}>
                 Optional — skip anything that doesn&apos;t apply.
               </p>
