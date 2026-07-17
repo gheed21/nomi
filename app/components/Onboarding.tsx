@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { recordTasteSignals } from "../lib/tasteProfile";
 
 // ─── Types / constants ────────────────────────────────────────────────────────
@@ -166,8 +166,12 @@ export default function Onboarding({ onComplete }: Props) {
     setStyleUploads(prev => prev.filter((_, idx) => idx !== i));
   }
 
-  function toggleStyle(s: string) {
-    setStyles(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  function likeStyle(s: string) {
+    setStyles(prev => prev.includes(s) ? prev : [...prev, s]);
+  }
+
+  function removeStyle(s: string) {
+    setStyles(prev => prev.filter(x => x !== s));
   }
 
   function toggleFitChip(label: string) {
@@ -338,44 +342,14 @@ export default function Onboarding({ onComplete }: Props) {
                 Select the ones that describe your style the most
               </p>
 
-              {/* 1 — Style image grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "12px" }}>
-                {styleOptionsFor(gender).map(({ key, image, label }) => {
-                  const on = styles.includes(key);
-                  return (
-                    <div key={key}>
-                      <button onClick={() => toggleStyle(key)} style={{
-                        position: "relative", width: "100%", aspectRatio: "1", borderRadius: "12px",
-                        border: on ? "2.5px solid #c9a96e" : "none",
-                        padding: 0, overflow: "hidden", cursor: "pointer", background: "#f7f6f3",
-                        transition: "border-color 0.12s", display: "block",
-                      }}>
-                        <StyleTileImage src={image} label={label} />
-                        <div style={{
-                          position: "absolute", top: "6px", right: "6px",
-                          width: "20px", height: "20px", borderRadius: "50%",
-                          background: on ? "#c9a96e" : "rgba(255,255,255,0.35)",
-                          border: on ? "none" : "1.5px solid rgba(255,255,255,0.85)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          transition: "background 0.12s",
-                        }}>
-                          {on && (
-                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                              <path d="M2 5.5l2.5 2.5L9 3" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          )}
-                        </div>
-                      </button>
-                      <p style={{
-                        fontSize: "12px", color: on ? "#c9a96e" : "#888", fontWeight: on ? 600 : 500,
-                        textAlign: "center", marginTop: "6px", transition: "color 0.12s",
-                      }}>
-                        {label}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* 1 — Swipe style cards */}
+              <SwipeStyleCards
+                key={gender}
+                options={styleOptionsFor(gender)}
+                liked={styles}
+                onLike={likeStyle}
+                onRemove={removeStyle}
+              />
 
               {/* Skip for now */}
               <div style={{ textAlign: "center", marginBottom: "24px" }}>
@@ -706,6 +680,180 @@ export default function Onboarding({ onComplete }: Props) {
 }
 
 // ─── Shared small components ─────────────────────────────────────────────────
+
+// Tinder-style one-card-at-a-time style picker. Swipe right (or tap ♥) to
+// like, swipe left (or tap ✕) to skip. After the last card, shows a recap
+// of everything liked with tap-to-remove — no mid-swipe undo, so swiping
+// stays fast, but nothing liked by accident is stuck.
+function SwipeStyleCards({
+  options, liked, onLike, onRemove,
+}: {
+  options: StyleOption[];
+  liked: string[];
+  onLike: (key: string) => void;
+  onRemove: (key: string) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [exitDir, setExitDir] = useState<"left" | "right" | null>(null);
+  const startXRef = useRef(0);
+
+  const current = options[index];
+  const done = index >= options.length;
+  const likedHere = liked.filter(key => options.some(o => o.key === key));
+
+  function commit(dir: "left" | "right") {
+    if (exitDir || !current) return;
+    setExitDir(dir);
+    setDragging(false);
+    if (dir === "right") onLike(current.key);
+    setTimeout(() => {
+      setIndex(i => i + 1);
+      setDragX(0);
+      setExitDir(null);
+    }, 200);
+  }
+
+  function handlePointerDown(e: React.PointerEvent) {
+    if (exitDir) return;
+    setDragging(true);
+    startXRef.current = e.clientX;
+  }
+  function handlePointerMove(e: React.PointerEvent) {
+    if (!dragging || exitDir) return;
+    setDragX(e.clientX - startXRef.current);
+  }
+  function endDrag() {
+    if (!dragging) return;
+    setDragging(false);
+    if (dragX > 90) commit("right");
+    else if (dragX < -90) commit("left");
+    else setDragX(0);
+  }
+
+  if (done) {
+    return (
+      <div style={{ marginBottom: "12px" }}>
+        <p style={{ fontSize: "13px", fontWeight: 600, color: "#000", marginBottom: "2px" }}>
+          {likedHere.length > 0 ? `You liked ${likedHere.length} style${likedHere.length === 1 ? "" : "s"}` : "No styles liked"}
+        </p>
+        {likedHere.length > 0 && (
+          <p style={{ fontSize: "12px", color: "#aaa", marginBottom: "10px" }}>Tap one to remove it</p>
+        )}
+        {likedHere.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "12px" }}>
+            {likedHere.map(key => {
+              const opt = options.find(o => o.key === key);
+              if (!opt) return null;
+              return (
+                <button
+                  key={key}
+                  onClick={() => onRemove(key)}
+                  style={{ width: "68px", border: "none", background: "none", padding: 0, cursor: "pointer", textAlign: "center" }}
+                >
+                  <div style={{ position: "relative", width: "68px", height: "68px", borderRadius: "10px", overflow: "hidden", background: "#f7f6f3" }}>
+                    <StyleTileImage src={opt.image} label={opt.label} />
+                    <div style={{
+                      position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <span style={{ color: "#fff", fontSize: "18px", lineHeight: 1 }}>&times;</span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: "10px", color: "#888", marginTop: "3px" }}>{opt.label}</p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <button
+          onClick={() => setIndex(0)}
+          style={{
+            background: "none", border: "1.5px solid #e0dbd4", borderRadius: "99px",
+            padding: "7px 16px", fontSize: "12px", color: "#c9a96e", cursor: "pointer", fontFamily: "inherit",
+          }}
+        >
+          Swipe again
+        </button>
+      </div>
+    );
+  }
+
+  const rotation = dragX / 18;
+  const likeOpacity = Math.min(Math.max(dragX / 90, 0), 1);
+  const skipOpacity = Math.min(Math.max(-dragX / 90, 0), 1);
+  const transform = exitDir
+    ? `translateX(${exitDir === "right" ? 500 : -500}px) rotate(${exitDir === "right" ? 22 : -22}deg)`
+    : `translateX(${dragX}px) rotate(${rotation}deg)`;
+
+  return (
+    <div style={{ marginBottom: "12px" }}>
+      <p style={{ fontSize: "12px", color: "#bbb", textAlign: "center", marginBottom: "8px" }}>
+        {index + 1} of {options.length}
+      </p>
+      <div style={{ position: "relative", width: "100%", aspectRatio: "3 / 4", marginBottom: "14px" }}>
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={endDrag}
+          onPointerLeave={endDrag}
+          style={{
+            position: "absolute", inset: 0, borderRadius: "16px", overflow: "hidden",
+            background: "#f7f6f3", cursor: dragging ? "grabbing" : "grab", touchAction: "pan-y",
+            transform, transition: dragging ? "none" : "transform 0.22s ease", userSelect: "none",
+          }}
+        >
+          <StyleTileImage src={current.image} label={current.label} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 42%)" }} />
+          <p style={{ position: "absolute", bottom: "14px", left: "16px", right: "16px", color: "#fff", fontSize: "17px", fontWeight: 700 }}>
+            {current.label}
+          </p>
+          <div style={{
+            position: "absolute", top: "18px", left: "18px", padding: "5px 12px",
+            border: "3px solid #c9a96e", borderRadius: "8px", color: "#c9a96e",
+            fontSize: "14px", fontWeight: 700, letterSpacing: "1px", transform: "rotate(-12deg)",
+            opacity: likeOpacity, background: "rgba(255,255,255,0.85)",
+          }}>
+            LIKE
+          </div>
+          <div style={{
+            position: "absolute", top: "18px", right: "18px", padding: "5px 12px",
+            border: "3px solid #999", borderRadius: "8px", color: "#999",
+            fontSize: "14px", fontWeight: 700, letterSpacing: "1px", transform: "rotate(12deg)",
+            opacity: skipOpacity, background: "rgba(255,255,255,0.85)",
+          }}>
+            SKIP
+          </div>
+        </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: "20px" }}>
+        <button
+          onClick={() => commit("left")}
+          aria-label="Skip"
+          style={{
+            width: "48px", height: "48px", borderRadius: "50%", border: "1.5px solid #e0dbd4",
+            background: "#fff", cursor: "pointer", fontSize: "18px", color: "#999",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          &times;
+        </button>
+        <button
+          onClick={() => commit("right")}
+          aria-label="Like"
+          style={{
+            width: "48px", height: "48px", borderRadius: "50%", border: "none",
+            background: "#c9a96e", cursor: "pointer", fontSize: "18px", color: "#fff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          &hearts;
+        </button>
+      </div>
+    </div>
+  );
+}
 
 // Falls back to a plain label tile instead of a broken-image icon when a
 // gender-specific style photo (mens/*.png, kids/*.png) hasn't been added yet.
