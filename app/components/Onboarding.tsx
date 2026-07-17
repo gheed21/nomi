@@ -362,9 +362,9 @@ export default function Onboarding({ onComplete }: Props) {
               </div>
 
               {/* 2 — Free-text description */}
-              <FieldLabel>Or describe it yourself</FieldLabel>
+              <FieldLabel>Anything else? (optional)</FieldLabel>
               <textarea
-                placeholder="e.g. I like oversized fits, earth tones, nothing too revealing"
+                placeholder="e.g. Y2K, cottagecore, dark academia..."
                 value={styleDesc}
                 onChange={e => setStyleDesc(e.target.value)}
                 rows={3}
