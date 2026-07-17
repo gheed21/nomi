@@ -339,7 +339,7 @@ export default function Onboarding({ onComplete }: Props) {
                 What&apos;s your style?
               </h2>
               <p style={{ fontSize: "13px", color: "#aaa", marginBottom: "18px", lineHeight: 1.5 }}>
-                Select the ones that describe your style the most
+                Swipe right if it&apos;s you, left if it&apos;s not
               </p>
 
               {/* 1 — Swipe style cards */}
