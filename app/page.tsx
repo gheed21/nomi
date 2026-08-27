@@ -19,7 +19,7 @@ export type Filters = {
   secondhandOnly:      boolean;
   recommendationStyle: RecStyle;
   description:         string;
-  gender:              string;   // "Women's" | "Men's" | "Kids" | "Unisex" | ""
+  gender:              string;   // "Women's" | "Men's" | "Unisex" | ""
 };
 
 const PRICE_MAX = 1000;
@@ -37,7 +37,7 @@ const DEFAULT_FILTERS: Filters = {
   gender:              "",
 };
 
-const GENDER_OPTIONS = ["Women's", "Men's", "Kids", "Unisex"] as const;
+const GENDER_OPTIONS = ["Women's", "Men's", "Unisex"] as const;
 
 const SUBCATEGORIES: Record<string, string[]> = {
   Tops:       ["Tank top", "Sleeveless top", "Short sleeve top", "Long sleeve top", "Blouse", "Button-down", "Sweatshirt", "Hoodie", "Crop top", "Bodysuit", "Corset"],

@@ -36,3 +36,22 @@ export function getCategoryExpertise(): string {
   }
   return cached;
 }
+
+// Wraps getCategoryExpertise() into the system-prompt block shared by every
+// route that injects it (analyze, for-you, trend-picks, chat) — was
+// previously copy-pasted identically in all four, which is how this rule
+// would have silently drifted if added to only one.
+//
+// The "Best:" lists in SME.md are ordered by fit, not by how often a store
+// should be recommended — but list position still reads as a ranking to the
+// model, and Zara/Steve Madden happen to lead nearly every apparel/shoe
+// category (Tops & Dresses, Denim, Trousers, Coats all start with Zara;
+// both shoe categories start with Steve Madden). With nothing telling the
+// model to look past the first name, that ordering plus their general
+// brand-name prominence made them the default pick far more than the doc's
+// other equally-valid options — hence the explicit rotation instruction.
+export function getCategoryExpertiseSection(): string {
+  const body = getCategoryExpertise();
+  if (!body) return "";
+  return `\nSTORE CATEGORY KNOWLEDGE (authoritative — a store listed as NOT carrying a category means never recommend it for that category, even if it fits the general vibe):\n${body}\n\nStore variety matters as much as category fit: within a "Best:" list, don't default to whichever store happens to be listed first — treat the full list as equally valid and rotate through it. In particular, don't lean on Zara for apparel or Steve Madden for shoes by default; only pick them when the user's stated style or budget specifically points there, or when the rest of that category's list has already been used recently.\n`;
+}

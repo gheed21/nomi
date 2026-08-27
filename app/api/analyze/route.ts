@@ -1,12 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { getCategoryExpertise } from "@/app/lib/smeKnowledge";
+import { getCategoryExpertiseSection } from "@/app/lib/smeKnowledge";
 import { buildTasteSection, buildFeedbackSection, type TasteProfile, type FeedbackStore } from "@/app/lib/tasteProfile";
 import { enrichMatchesWithImages, type RawMatch } from "@/app/lib/serpImages";
 
-const categoryExpertiseSection = getCategoryExpertise()
-  ? `\nSTORE CATEGORY KNOWLEDGE (authoritative — a store listed as NOT carrying a category means never recommend it for that category, even if it fits the general vibe):\n${getCategoryExpertise()}\n`
-  : "";
+const categoryExpertiseSection = getCategoryExpertiseSection();
 
 const client = new Anthropic();
 
@@ -21,7 +19,7 @@ type Filters = {
   secondhandOnly?:      boolean;
   recommendationStyle?: "specific" | "direction";
   description?:         string;
-  gender?:              string;     // "Women's" | "Men's" | "Kids" | "Unisex" | ""
+  gender?:              string;     // "Women's" | "Men's" | "Unisex" | ""
 };
 
 function buildCategoryGlossary(filters?: Filters): string {
@@ -241,7 +239,10 @@ function detectExclusiveConstraint(filters?: Filters): string {
 function buildGenderSection(filters?: Filters): string {
   const g = filters?.gender?.trim();
   if (!g || g === "All") return "";
-  return `\nDEPARTMENT (overrides any earlier gender instruction): Suggest only items from the ${g} section. Every recommended piece — all 3 — must be marketed to ${g} shoppers. Do not suggest items from men's, women's, or kids' sections that don't match this.\n`;
+  if (g === "Unisex") {
+    return `\nDEPARTMENT (overrides any earlier gender instruction): The user wants unisex pieces — gender-neutral items designed or cut to work on anyone, not items pulled from a specific men's or women's line just because they'd technically fit. Think oversized basics, gender-neutral sizing, and brands built around unisex fits (e.g. Uniqlo, Everlane, Carhartt WIP). All 3 recommended pieces must be genuinely unisex.\n`;
+  }
+  return `\nDEPARTMENT (overrides any earlier gender instruction): Suggest only items from the ${g} section. Every recommended piece — all 3 — must be marketed to ${g} shoppers.\n`;
 }
 
 function buildSystemPrompt(filters?: Filters, tasteProfile?: TasteProfile | null, feedbackSignals?: FeedbackStore | null): string {

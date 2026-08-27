@@ -1,14 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { getCategoryExpertise } from "@/app/lib/smeKnowledge";
+import { getCategoryExpertiseSection } from "@/app/lib/smeKnowledge";
 import { buildTasteSection, buildFeedbackSection, type TasteProfile, type FeedbackStore } from "@/app/lib/tasteProfile";
 import { enrichMatchesWithImages, parseItemSentence } from "@/app/lib/serpImages";
 
 const client = new Anthropic();
 
-const categoryExpertiseSection = getCategoryExpertise()
-  ? `\nSTORE CATEGORY KNOWLEDGE (authoritative — a store listed as NOT carrying a category means never recommend it for that category, even if it fits the general vibe):\n${getCategoryExpertise()}\n`
-  : "";
+const categoryExpertiseSection = getCategoryExpertiseSection();
 
 const SYSTEM_PROMPT = `You generate a short list of personalized shopping picks for Nomi's Explore "For you" feed. This is not a chat reply — output only the pick list, nothing else.
 ${categoryExpertiseSection}
