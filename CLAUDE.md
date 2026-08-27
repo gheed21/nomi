@@ -50,6 +50,30 @@ General
 
 - If a request conflicts with something already explicitly decided earlier in the project (a design rule, a scope boundary), flag the conflict rather than silently overriding it.
 
+## Product Positioning
+
+### ICP
+A style-conscious user who already has a sense of personal taste, saves outfit inspiration, and wants help finding the **missing pieces** that complete outfits around items they already own. Their problem is not lack of inspiration — it's that they often like individual pieces but struggle to find ones that actually go with their wardrobe and feel like *their* style.
+
+### One-line value prop
+**Upload one item you own and find the missing pieces to complete the outfit in your style.**
+
+### Homepage copy draft
+
+**Headline**
+**Complete the outfit in your style**
+
+**Subheadline**
+Upload one item you already own and discover the missing pieces that actually go with it — and feel like you.
+
+**How it works**
+- Upload a piece you already own
+- Set what you're looking for
+- Get recommendations that complete the outfit in your style
+
+**Why it matters**
+Stop buying pieces that look good on their own but don't work with the rest of your wardrobe.
+
 ## SMEs
 
 At the start of every session, read claude/smes/fashion-stores/SME.md before making any store recommendations, updating storeSearch.ts, or modifying the Ask Nomi system prompt.
