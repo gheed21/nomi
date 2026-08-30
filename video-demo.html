@@ -63,11 +63,15 @@
       display: flex;
       flex-direction: column;
       opacity: 0;
-      transition: opacity 0.5s ease;
+      visibility: hidden;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+      pointer-events: none;
     }
 
     .screen.active {
       opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
     }
 
     /* SCREEN 1: YOU UPLOADED */
