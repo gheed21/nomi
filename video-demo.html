@@ -5,12 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nomi Demo</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, #f5f0e8 0%, #faf8f3 100%);
@@ -20,7 +15,6 @@
       justify-content: center;
       padding: 20px;
     }
-
     .phone-frame {
       width: 380px;
       height: 680px;
@@ -31,7 +25,6 @@
       position: relative;
       overflow: hidden;
     }
-
     .phone-frame::before {
       content: '';
       position: absolute;
@@ -44,7 +37,6 @@
       border-radius: 0 0 30px 30px;
       z-index: 10;
     }
-
     .phone-screen {
       width: 100%;
       height: 100%;
@@ -55,33 +47,27 @@
       flex-direction: column;
       position: relative;
     }
+    .screen { display: none; width: 100%; height: 100%; flex-direction: column; }
+    .screen.active { display: flex; }
 
-    .screen {
+    .nomi-logo {
       position: absolute;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.5s ease, visibility 0.5s ease;
-      pointer-events: none;
+      top: 12px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: 300;
+      color: #c9a96e;
+      letter-spacing: 2px;
+      z-index: 20;
     }
 
-    .screen.active {
-      opacity: 1;
-      visibility: visible;
-      pointer-events: auto;
-    }
-
-    /* SCREEN 1: YOU UPLOADED */
+    /* Screen 0: You Uploaded */
     .screen-upload {
       padding: 60px 20px;
       justify-content: flex-start;
       align-items: center;
       text-align: center;
     }
-
     .upload-header {
       font-size: 12px;
       font-weight: 600;
@@ -89,30 +75,21 @@
       text-transform: uppercase;
       letter-spacing: 1.5px;
       margin-bottom: 30px;
-      width: 100%;
     }
-
     .upload-image {
       width: 120px;
       height: 160px;
       background: #f0f0f0;
       border-radius: 12px;
-      margin-bottom: 30px;
       overflow: hidden;
     }
+    .upload-image img { width: 100%; height: 100%; object-fit: cover; }
 
-    .upload-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* SCREEN 2: STYLE IT WITH */
+    /* Screen 1: Style It With */
     .screen-style {
       padding-top: 60px;
       justify-content: flex-start;
     }
-
     .style-header {
       font-size: 12px;
       font-weight: 600;
@@ -121,32 +98,22 @@
       letter-spacing: 1.5px;
       padding: 0 20px;
       margin-bottom: 20px;
-      width: 100%;
     }
-
     .products-container {
       flex: 1;
       overflow-x: auto;
-      overflow-y: hidden;
       display: flex;
-      scroll-snap-type: x mandatory;
       padding: 0 20px;
       gap: 12px;
     }
-
-    .products-container::-webkit-scrollbar {
-      height: 0;
-    }
-
+    .products-container::-webkit-scrollbar { height: 0; }
     .product-card {
       flex-shrink: 0;
       width: 100%;
-      scroll-snap-align: start;
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-
     .product-image {
       width: 100%;
       height: 160px;
@@ -154,42 +121,16 @@
       border-radius: 12px;
       overflow: hidden;
     }
-
-    .product-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .product-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .product-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1a1a1a;
-    }
-
-    .product-store {
-      font-size: 12px;
-      color: #999;
-    }
-
-    .product-price {
-      font-size: 13px;
-      color: #c9a96e;
-      font-weight: 600;
-    }
-
+    .product-image img { width: 100%; height: 100%; object-fit: cover; }
+    .product-info { display: flex; flex-direction: column; gap: 4px; }
+    .product-name { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+    .product-store { font-size: 12px; color: #999; }
+    .product-price { font-size: 13px; color: #c9a96e; font-weight: 600; }
     .product-actions {
       display: flex;
       gap: 10px;
       margin-top: 10px;
     }
-
     .btn-secondary {
       flex: 1;
       padding: 10px;
@@ -202,7 +143,7 @@
       cursor: pointer;
     }
 
-    /* SCREEN 3: SAVE TO BOARD */
+    /* Screen 2: Save to Board */
     .screen-save {
       padding: 0 20px;
       justify-content: center;
@@ -210,19 +151,8 @@
       text-align: center;
       gap: 20px;
     }
-
-    .save-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a1a1a;
-    }
-
-    .save-subtitle {
-      font-size: 14px;
-      color: #999;
-      line-height: 1.5;
-    }
-
+    .save-title { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+    .save-subtitle { font-size: 14px; color: #999; line-height: 1.5; }
     .save-btn {
       background: #c9a96e;
       color: white;
@@ -233,17 +163,6 @@
       font-weight: 600;
       cursor: pointer;
     }
-
-    .nomi-logo {
-      position: absolute;
-      top: 12px;
-      left: 20px;
-      font-size: 18px;
-      font-weight: 300;
-      color: #c9a96e;
-      letter-spacing: 2px;
-      z-index: 20;
-    }
   </style>
 </head>
 <body>
@@ -251,23 +170,23 @@
     <div class="phone-screen">
       <div class="nomi-logo">nomi.</div>
 
-      <!-- SCREEN 1: YOU UPLOADED -->
+      <!-- Screen 0: You Uploaded -->
       <div class="screen active">
         <div class="screen-upload">
           <div class="upload-header">You uploaded</div>
           <div class="upload-image">
-            <img src="/public/styles/oldmoney.png" alt="Uploaded item">
+            <img src="/public/styles/oldmoney.png" alt="Uploaded">
           </div>
         </div>
       </div>
 
-      <!-- SCREEN 2: STYLE IT WITH -->
+      <!-- Screen 1: Style It With -->
       <div class="screen">
         <div class="style-header">Style it with</div>
         <div class="products-container">
           <div class="product-card">
             <div class="product-image">
-              <img src="/public/styles/streetwear.png" alt="Mokki Shoulder Bag">
+              <img src="/public/styles/streetwear.png" alt="Bag">
             </div>
             <div class="product-info">
               <div class="product-name">Mokki Shoulder Bag</div>
@@ -279,10 +198,9 @@
               <button class="btn-secondary">Recommend less</button>
             </div>
           </div>
-
           <div class="product-card">
             <div class="product-image">
-              <img src="/public/styles/oldmoney.png" alt="Pleated Trousers">
+              <img src="/public/styles/oldmoney.png" alt="Trousers">
             </div>
             <div class="product-info">
               <div class="product-name">Pleated Wide Leg Trousers</div>
@@ -297,7 +215,7 @@
         </div>
       </div>
 
-      <!-- SCREEN 3: SAVE TO BOARD -->
+      <!-- Screen 2: Save to Board -->
       <div class="screen">
         <div class="screen-save">
           <h2 class="save-title">Save to board</h2>
@@ -313,9 +231,9 @@
     const screens = document.querySelectorAll('.screen');
     const totalScreens = screens.length;
 
-    function showScreen(index) {
+    function showScreen(n) {
       screens.forEach(s => s.classList.remove('active'));
-      screens[index].classList.add('active');
+      screens[n].classList.add('active');
     }
 
     setInterval(() => {
@@ -328,17 +246,13 @@
       showScreen(currentScreen);
     });
 
-    // Auto-scroll products on screen 2
-    const productsContainer = document.querySelector('.products-container');
-    if (productsContainer) {
-      let scrollPosition = 0;
+    const container = document.querySelector('.products-container');
+    if (container) {
+      let pos = 0;
       setInterval(() => {
-        const maxScroll = productsContainer.scrollWidth - productsContainer.clientWidth;
-        scrollPosition += 2;
-        if (scrollPosition > maxScroll) {
-          scrollPosition = 0;
-        }
-        productsContainer.scrollLeft = scrollPosition;
+        pos += 2;
+        if (pos > container.scrollWidth - container.clientWidth) pos = 0;
+        container.scrollLeft = pos;
       }, 50);
     }
   </script>
