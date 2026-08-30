@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nomi Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #f5f0e8 0%, #faf8f3 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .phone-frame {
+      width: 380px;
+      height: 680px;
+      background: #000;
+      border-radius: 50px;
+      padding: 14px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .phone-frame::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 45%;
+      height: 28px;
+      background: #000;
+      border-radius: 0 0 30px 30px;
+      z-index: 10;
+    }
+
+    .phone-screen {
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      border-radius: 40px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .screen {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .screen.active {
+      opacity: 1;
+    }
+
+    /* SCREEN 1: YOU UPLOADED */
+    .screen-upload {
+      padding: 60px 20px;
+      justify-content: flex-start;
+      align-items: center;
+      text-align: center;
+    }
+
+    .upload-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: #c9a96e;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 30px;
+      width: 100%;
+    }
+
+    .upload-image {
+      width: 120px;
+      height: 160px;
+      background: #f0f0f0;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+
+    .upload-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* SCREEN 2: STYLE IT WITH */
+    .screen-style {
+      padding-top: 60px;
+      justify-content: flex-start;
+    }
+
+    .style-header {
+      font-size: 12px;
+      font-weight: 600;
+      color: #c9a96e;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      padding: 0 20px;
+      margin-bottom: 20px;
+      width: 100%;
+    }
+
+    .products-container {
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      display: flex;
+      scroll-snap-type: x mandatory;
+      padding: 0 20px;
+      gap: 12px;
+    }
+
+    .products-container::-webkit-scrollbar {
+      height: 0;
+    }
+
+    .product-card {
+      flex-shrink: 0;
+      width: 100%;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .product-image {
+      width: 100%;
+      height: 160px;
+      background: #f0f0f0;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .product-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .product-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+
+    .product-store {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .product-price {
+      font-size: 13px;
+      color: #c9a96e;
+      font-weight: 600;
+    }
+
+    .product-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      cursor: pointer;
+    }
+
+    /* SCREEN 3: SAVE TO BOARD */
+    .screen-save {
+      padding: 0 20px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 20px;
+    }
+
+    .save-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+
+    .save-subtitle {
+      font-size: 14px;
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .save-btn {
+      background: #c9a96e;
+      color: white;
+      border: none;
+      padding: 14px 40px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nomi-logo {
+      position: absolute;
+      top: 12px;
+      left: 20px;
+      font-size: 18px;
+      font-weight: 300;
+      color: #c9a96e;
+      letter-spacing: 2px;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <div class="phone-screen">
+      <div class="nomi-logo">nomi.</div>
+
+      <!-- SCREEN 1: YOU UPLOADED -->
+      <div class="screen active">
+        <div class="screen-upload">
+          <div class="upload-header">You uploaded</div>
+          <div class="upload-image">
+            <img src="/public/styles/oldmoney.png" alt="Uploaded item">
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 2: STYLE IT WITH -->
+      <div class="screen">
+        <div class="style-header">Style it with</div>
+        <div class="products-container">
+          <div class="product-card">
+            <div class="product-image">
+              <img src="/public/styles/streetwear.png" alt="Mokki Shoulder Bag">
+            </div>
+            <div class="product-info">
+              <div class="product-name">Mokki Shoulder Bag</div>
+              <div class="product-store">Polène · Camel</div>
+              <div class="product-price">€540</div>
+            </div>
+            <div class="product-actions">
+              <button class="btn-secondary">More like this</button>
+              <button class="btn-secondary">Recommend less</button>
+            </div>
+          </div>
+
+          <div class="product-card">
+            <div class="product-image">
+              <img src="/public/styles/oldmoney.png" alt="Pleated Trousers">
+            </div>
+            <div class="product-info">
+              <div class="product-name">Pleated Wide Leg Trousers</div>
+              <div class="product-store">Mango · £22.99</div>
+              <div class="product-price">Was £49.99</div>
+            </div>
+            <div class="product-actions">
+              <button class="btn-secondary">More like this</button>
+              <button class="btn-secondary">Recommend less</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCREEN 3: SAVE TO BOARD -->
+      <div class="screen">
+        <div class="screen-save">
+          <h2 class="save-title">Save to board</h2>
+          <p class="save-subtitle">Keep this outfit for later</p>
+          <button class="save-btn">Save outfit</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentScreen = 0;
+    const screens = document.querySelectorAll('.screen');
+    const totalScreens = screens.length;
+
+    function showScreen(index) {
+      screens.forEach(s => s.classList.remove('active'));
+      screens[index].classList.add('active');
+    }
+
+    setInterval(() => {
+      currentScreen = (currentScreen + 1) % totalScreens;
+      showScreen(currentScreen);
+    }, 4000);
+
+    document.querySelector('.phone-frame').addEventListener('click', () => {
+      currentScreen = (currentScreen + 1) % totalScreens;
+      showScreen(currentScreen);
+    });
+
+    // Auto-scroll products on screen 2
+    const productsContainer = document.querySelector('.products-container');
+    if (productsContainer) {
+      let scrollPosition = 0;
+      setInterval(() => {
+        const maxScroll = productsContainer.scrollWidth - productsContainer.clientWidth;
+        scrollPosition += 2;
+        if (scrollPosition > maxScroll) {
+          scrollPosition = 0;
+        }
+        productsContainer.scrollLeft = scrollPosition;
+      }, 50);
+    }
+  </script>
+</body>
+</html>
