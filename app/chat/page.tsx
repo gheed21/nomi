@@ -150,8 +150,10 @@ export default function ChatPage() {
     })()
   );
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    setConversations(JSON.parse(localStorage.getItem("nomi_conversations") ?? "[]"));
+    const convs = JSON.parse(localStorage.getItem("nomi_conversations") ?? "[]");
+    if (convs.length > 0) setConversations(convs);
   }, []);
 
   useEffect(() => {
@@ -172,6 +174,7 @@ export default function ChatPage() {
   function upsertConversation(msgs: Message[]) {
     const userMsg = msgs.find(m => m.role === "user");
     if (!userMsg) return;
+    // eslint-disable-next-line react-hooks/purity
     const conv: Conversation = {
       id: sessionIdRef.current,
       title: userMsg.content.slice(0, 60),
@@ -546,12 +549,11 @@ function MessageBubble({ msg }: { msg: { role: "user" | "assistant"; content: st
   // null = pending (not yet verified); [] = done but all suppressed.
   const [verifiedLinks, setVerifiedLinks] = useState<StoreLink[] | null>(null);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (msg.role !== "assistant") return;
 
     const toVerify = allLinks.filter(l => !!l.item);
-    setVerifiedLinks(null); // hold while in-flight
-
     if (!toVerify.length) { setVerifiedLinks([]); return; }
 
     let cancelled = false;

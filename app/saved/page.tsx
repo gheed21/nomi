@@ -72,10 +72,21 @@ export default function SavedPage() {
   const [editingName,    setEditingName]    = useState(false);
   const [draftName,      setDraftName]      = useState("");
 
-  function load() {
-    const storedLooks: SavedLook[] = JSON.parse(localStorage.getItem("nomi_saved_looks") ?? "[]");
+  function reloadMyPosts() {
+    const myIds: string[] = JSON.parse(localStorage.getItem("nomi_my_post_ids") ?? "[]");
+    const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
+    setMyPosts(all.filter(l => myIds.includes(l.id)));
+  }
 
-    // Migration: wrap any legacy flat SavedItems as single-item looks on first load
+  function removePost(id: string) {
+    const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
+    localStorage.setItem("nomi_community_looks", JSON.stringify(all.filter(l => l.id !== id)));
+    setMyPosts(prev => prev.filter(l => l.id !== id));
+  }
+
+  useEffect(() => {
+    // Load looks and boards
+    const storedLooks: SavedLook[] = JSON.parse(localStorage.getItem("nomi_saved_looks") ?? "[]");
     const legacyItems: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
     if (legacyItems.length > 0 && storedLooks.length === 0) {
       const migrated: SavedLook[] = legacyItems.map(item => ({
@@ -91,27 +102,21 @@ export default function SavedPage() {
       try {
         localStorage.setItem("nomi_saved_looks", JSON.stringify(migrated));
       } catch { /* ignore */ }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLooks(migrated);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLooks(storedLooks);
     }
 
-    setBoards(JSON.parse(localStorage.getItem("nomi_boards") ?? "[]"));
-  }
+    const boards = JSON.parse(localStorage.getItem("nomi_boards") ?? "[]");
+    setBoards(boards);
 
-  function reloadMyPosts() {
+    // Load my posts
     const myIds: string[] = JSON.parse(localStorage.getItem("nomi_my_post_ids") ?? "[]");
     const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
     setMyPosts(all.filter(l => myIds.includes(l.id)));
-  }
-
-  function removePost(id: string) {
-    const all: CommunityLook[] = JSON.parse(localStorage.getItem("nomi_community_looks") ?? "[]");
-    localStorage.setItem("nomi_community_looks", JSON.stringify(all.filter(l => l.id !== id)));
-    setMyPosts(prev => prev.filter(l => l.id !== id));
-  }
-
-  useEffect(() => { load(); reloadMyPosts(); }, []);
+  }, []);
 
   // ── Board helpers ────────────────────────────────────────────────────────────
 

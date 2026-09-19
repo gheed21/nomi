@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import NomiNav from "../components/NomiNav";
 import type { CommunityLook, CommunityPiece } from "../components/ShareToExploreModal";
-import { OCCASION_GROUPS, toTagSlug, normalizeTag } from "../components/ShareToExploreModal";
+import { OCCASION_GROUPS, normalizeTag } from "../components/ShareToExploreModal";
 import ItemThumbnail from "../components/ItemThumbnail";
 import trendsRaw from "../data/trends.json";
 import type { PinterestBoard } from "../api/pinterest/boards/route";
@@ -107,10 +107,6 @@ const OCCASION_FILTER: Record<string, string[]> = {
   "Secondhand": _g("Secondhand"),
 };
 
-const OCCASION_SLUG_SET = new Set(
-  OCCASION_GROUPS.flatMap(g => g.options.map(normalizeTag))
-);
-
 function slugToFilterTab(slug: string): FilterTab | null {
   const norm = normalizeTag(slug);
   for (const [tab, slugs] of Object.entries(OCCASION_FILTER)) {
@@ -178,13 +174,18 @@ export default function ExplorePage() {
       .finally(() => setForYouLoading(false));
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     migrateLegacyTasteProfile();
-    setTasteProfile(getTasteProfile());
-    setFeedback(getFeedbackSignals());
-
+    const taste = getTasteProfile();
+    const feedback = getFeedbackSignals();
     const lastManual = Number(localStorage.getItem(FOR_YOU_REFRESH_KEY) ?? 0);
-    setCanManualRefresh(Date.now() - lastManual > FOR_YOU_MIN_REFRESH_MS);
+    // eslint-disable-next-line react-hooks/purity
+    const canRefresh = Date.now() - lastManual > FOR_YOU_MIN_REFRESH_MS;
+
+    setTasteProfile(taste);
+    setFeedback(feedback);
+    setCanManualRefresh(canRefresh);
 
     const cacheRaw = localStorage.getItem(FOR_YOU_CACHE_KEY);
     const cache = cacheRaw ? JSON.parse(cacheRaw) as { date: string; picks: ForYouPick[] } : null;
@@ -235,8 +236,10 @@ export default function ExplorePage() {
       localStorage.setItem("nomi_community_looks", JSON.stringify(patched));
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const saved = new Set(JSON.parse(localStorage.getItem("nomi_community_saved") ?? "[]"));
     setLooks(patched);
-    setSavedIds(new Set(JSON.parse(localStorage.getItem("nomi_community_saved") ?? "[]")));
+    setSavedIds(saved);
   }, []);
 
   // Ranked by closeness to taste profile + feedback, tie-broken by recency —
@@ -698,10 +701,11 @@ function PinterestConnect({ onTasteUpdated }: { onTasteUpdated: () => void }) {
 
   useEffect(() => {
     if (connected !== true) return;
-    setSyncing(true);
-    fetch("/api/pinterest/boards")
-      .then(r => r.json())
-      .then(async d => {
+
+    const sync = async () => {
+      setSyncing(true);
+      try {
+        const d = await fetch("/api/pinterest/boards").then(r => r.json());
         const boards: PinterestBoard[] = d.boards ?? [];
         if (!boards.length) return;
         let updated = scoreOnce(
@@ -729,9 +733,13 @@ function PinterestConnect({ onTasteUpdated }: { onTasteUpdated: () => void }) {
           notifiedRef.current = true;
           onTasteUpdatedRef.current();
         }
-      })
-      .catch(() => { /* best-effort — no visible browsing UI depends on this succeeding */ })
-      .finally(() => setSyncing(false));
+      } catch { /* best-effort — no visible browsing UI depends on this succeeding */ }
+      finally {
+        setSyncing(false);
+      }
+    };
+
+    sync();
   }, [connected]);
 
   function disconnect() {

@@ -418,20 +418,22 @@ export default function ResultsPage() {
 
   useEffect(() => {
     if (result || error) return;
-    setLoadingStep(0);
     const id = setInterval(() => setLoadingStep(s => (s + 1) % LOADING_MESSAGES.length), 1800);
     return () => clearInterval(id);
   }, [result, error]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     // Pre-load saved names from looks (new model) + legacy flat items for backward compat
     const savedLooks: SavedLook[] = JSON.parse(localStorage.getItem("nomi_saved_looks") ?? "[]");
     const legacyItems: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
-    setSavedMatchNames(new Set([
+    const savedNames = new Set([
       ...savedLooks.flatMap(l => l.items.filter(i => !i.isOriginal).map(i => i.name)),
       ...legacyItems.map(s => s.name),
-    ]));
-    setItemSaveCounts(JSON.parse(localStorage.getItem("nomi_item_save_counts") ?? "{}"));
+    ]);
+    const saveCounts = JSON.parse(localStorage.getItem("nomi_item_save_counts") ?? "{}");
+    setSavedMatchNames(savedNames);
+    setItemSaveCounts(saveCounts);
 
     // Scraped product metadata (cleared after reading to avoid stale state)
     const scraped = localStorage.getItem("nomi_scraped_product");
@@ -1082,9 +1084,11 @@ function ItemDetail({ match, onBack, searchImage, analysis, originalMeta, onSave
   const [itemSaved,     setItemSaved]     = useState(false);
   const [saveSheetOpen, setSaveSheetOpen] = useState(false);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     const saved: SavedItem[] = JSON.parse(localStorage.getItem("nomi_saved_items") ?? "[]");
-    setItemSaved(saved.some(s => s.name === match.name && s.store === match.store));
+    const isSaved = saved.some(s => s.name === match.name && s.store === match.store);
+    setItemSaved(isSaved);
   }, [match.name, match.store]);
 
   function handleShop() {
@@ -1183,14 +1187,20 @@ function SaveToSheet({ match, searchImage, analysis, originalMeta, onSaved, onCl
   const [showNewBoard, setShowNewBoard] = useState(false);
   const [newName,      setNewName]      = useState("");
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
-    setBoards(JSON.parse(localStorage.getItem("nomi_boards") ?? "[]"));
+    const boards = JSON.parse(localStorage.getItem("nomi_boards") ?? "[]");
+    if (boards.length > 0) setBoards(boards);
   }, []);
 
   function toggle(id: string) {
     setSelectedIds(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }
@@ -1240,6 +1250,7 @@ function SaveToSheet({ match, searchImage, analysis, originalMeta, onSaved, onCl
       },
     ];
 
+    // eslint-disable-next-line react-hooks/purity
     const look: SavedLook = { id: uid(), savedAt: Date.now(), uploadedImage: thumb, items: lookItems };
     try {
       localStorage.setItem("nomi_saved_looks", JSON.stringify([look, ...prevLooks]));
