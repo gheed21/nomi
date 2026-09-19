@@ -42,6 +42,17 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 📐 **Complete Your Look**: Find the missing pieces that make an outfit feel finished, not 47 options that might work.
 
+## Screenshots
+
+**Main Upload Screen**
+Upload a photo of any piece or paste a product link. Nomi lets you choose between "Complete the Outfit" (find pieces to go with this item) or "Find Similar Styles" (discover similar pieces across retailers).
+
+**Explore Hub**
+Browse trending fashion moments, style occasions, and curated collections. Filter by #OOTD, #GoingOut, #Events, #Weddings, #Work, or #Secondhand to find inspiration and stay current on what's hot.
+
+**Ask Nomi Chat**
+Talk to your personal stylist. Ask for outfit ideas, get styling advice, or describe what you're looking for and let Nomi recommend complete looks. Quick-tap suggestions make it easy to explore: "What should I wear this week?", "Help me shop on a budget", "I have nothing to wear".
+
 ## Tech Stack
 
 - **Frontend:** Next.js, TypeScript, Tailwind CSS
