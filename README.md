@@ -32,41 +32,23 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 ## Key Features
 
-✨ **Upload & Discover**: One photo. Instant outfit completion.
+Upload & Discover: One photo. Instant outfit completion.
 
-🎨 **Style-Aware**: Nomi understands color theory, fabric compatibility, and the difference between trendy and timeless.
+Style-Aware: Nomi understands color theory, fabric compatibility, and the difference between trendy and timeless.
 
-🛍️ **Retail Verified**: Recommendations come from curated fashion retailers, each specialist in their category.
+Retail Verified: Recommendations come from curated fashion retailers, each specialist in their category.
 
-⚡ **Build Don't Scatter**: Direct links to buy. No more closets full of pieces that don't work together.
+Build Don't Scatter: Direct links to buy. No more closets full of pieces that don't work together.
 
-📐 **Complete Your Look**: Find the missing pieces that make an outfit feel finished, not 47 options that might work.
-
-## Screenshots
-
-### Upload Screen
-Upload a photo of any piece or paste a product link. Choose between "Complete the outfit" (find pieces to go with this) or "Find similar styles" (discover similar pieces across retailers).
-
-### Explore Hub
-Browse trending fashion moments, style occasions, and curated collections. Filter by #OOTD, #GoingOut, #Events, #Weddings, #Work, or #Secondhand to find inspiration and stay current.
-
-### Ask Nomi Chat
-Talk to your personal AI stylist. Ask for outfit ideas, get styling advice, or describe what you're looking for and let Nomi recommend complete looks with quick-tap suggestions.
-
-### Results & Recommendations
-Get personalized outfit recommendations with style explanations, price ranges, brand names, and direct retailer links for each piece.
-
-### Saved Looks
-Collect and organize your favorite outfits. Save looks to boards and share with your community.
+Complete Your Look: Find the missing pieces that make an outfit feel finished.
 
 ## Tech Stack
 
-- **Frontend:** Next.js 16, TypeScript, Tailwind CSS
-- **Backend:** Next.js API routes
-- **ML/Style Engine:** Claude AI for style analysis and recommendations
-- **Data:** Real-time product scraping and retail integration
-- **Storage:** Supabase (PostgreSQL)
-- **Image Processing:** Sharp for thumbnail generation
+- Frontend: Next.js 16, TypeScript, Tailwind CSS
+- Backend: Next.js API routes
+- ML/Style Engine: Claude AI for style analysis and recommendations
+- Data: Real-time product scraping and retail integration
+- Storage: Supabase (PostgreSQL)
 
 ## Getting Started
 
@@ -77,81 +59,59 @@ Collect and organize your favorite outfits. Save looks to boards and share with 
 ### Installation
 
 ```bash
-# Clone the repo
 git clone https://github.com/gheed21/nomi.git
 cd nomi
-
-# Install dependencies
 npm install
-
-# Set up environment variables
 cp .env.example .env.local
-
-# Add your API keys:
-# - NEXT_PUBLIC_ANTHROPIC_API_KEY (Anthropic)
-# - SCRAPINGBEE_API_KEY (for product scraping)
-# - PINTEREST_API_KEY (optional, for Pinterest integration)
-
-# Run the dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open http://localhost:3000 in your browser.
 
-## Environment Variables
+### Environment Variables
 
 ```env
-# Anthropic API (Claude AI)
 NEXT_PUBLIC_ANTHROPIC_API_KEY=your_key_here
-
-# Product Link Scraping
 SCRAPINGBEE_API_KEY=your_key_here
-
-# Pinterest Integration (optional)
 PINTEREST_API_KEY=your_key_here
 ```
 
 ## How to Use Nomi
 
-1. **Home Screen:** Upload a photo or paste a product link
-2. **Set Filters:** Choose what you're looking for (category, color, budget, etc.)
-3. **Get Recommendations:** Nomi scans retailers and shows matching pieces
-4. **Explore:** Browse trending fashion in the Explore tab
-5. **Ask Nomi:** Chat with AI for styling advice and recommendations
-6. **Save Looks:** Collect outfits you love in the Saved section
-7. **Shop:** Click any recommendation to buy directly from retailers
+1. Upload a photo or paste a product link
+2. Set filters for what you're looking for
+3. Get personalized outfit recommendations
+4. Browse trending fashion in Explore
+5. Chat with AI for styling advice
+6. Save your favorite looks
+7. Shop directly from retailers
 
-## The ICP (Ideal Customer Profile)
+## Target Audience
 
-**You** are someone who:
-- Already has a clear sense of personal style
+You are someone who:
+- Has a clear sense of personal style
 - Saves outfit inspiration but struggles to execute it
 - Wants to shop smarter, not more
 - Values quality and fit over quantity
-- Gets frustrated when pieces "look good separately but don't work together"
+- Gets frustrated when pieces don't work together
 
 ## Why Nomi
 
-Most fashion recommendation engines optimize for *variety* and *volume*—they want you to buy more. Nomi optimizes for *fit* and *completeness*. We make one great outfit possible instead of 50 mediocre ones.
+Most fashion apps optimize for variety and volume. Nomi optimizes for fit and completeness. We make one great outfit possible instead of 50 mediocre ones.
 
-The result: less decision fatigue, less buyer's remorse, more confidence in what you wear.
+Result: less decision fatigue, less buyer's remorse, more confidence in what you wear.
 
-## Project Status
+## Status
 
-Nomi is actively in development. Features like style learning (as you buy and rate items) and wardrobe analytics are on the roadmap.
+Nomi is actively in development.
 
 ## Contributing
 
 Have ideas? Found a bug? Contributions welcome.
 
 ```bash
-# Create a feature branch
 git checkout -b feature/your-feature
-
-# Make your changes and commit
 git commit -m "feat: describe your change"
-
-# Push and open a PR
 git push origin feature/your-feature
 ```
 
@@ -159,14 +119,16 @@ git push origin feature/your-feature
 
 MIT
 
-## Questions?
+## Questions
 
-**What is Nomi?** A fashion copilot that builds complete outfits around one item, whether you own it or see it while shopping.
+What is Nomi? A fashion copilot that builds complete outfits around one item, whether you own it or see it while shopping.
 
-**Who is it for?** Anyone who knows their style but struggles to find pieces that actually work together.
+Who is it for? Anyone who knows their style but struggles to find pieces that work together.
 
-**How is it different?** We optimize for outfit completion, not shopping volume. Build coherent looks instead of collecting random pieces.
+How is it different? We optimize for outfit completion, not shopping volume. Build coherent looks instead of collecting random pieces.
 
-**Is it free?** Currently in development. Early access coming soon.
+Is it free? Currently in development. Early access coming soon.
+
+---
 
 Upload one item. Build a complete outfit. Feel like you.
