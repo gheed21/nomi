@@ -42,22 +42,31 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 📐 **Complete Your Look**: Find the missing pieces that make an outfit feel finished, not 47 options that might work.
 
-## Key Screens
+## Screenshots
 
-**Upload Screen** - Upload a photo or paste a link to start building outfits
+### Upload Screen
+Upload a photo of any piece or paste a product link. Choose between "Complete the outfit" (find pieces to go with this) or "Find similar styles" (discover similar pieces across retailers).
 
-**Explore Hub** - Browse trending fashion and curated collections by occasion
+### Explore Hub
+Browse trending fashion moments, style occasions, and curated collections. Filter by #OOTD, #GoingOut, #Events, #Weddings, #Work, or #Secondhand to find inspiration and stay current.
 
-**Ask Nomi** - Chat with your personal AI stylist for outfit recommendations
+### Ask Nomi Chat
+Talk to your personal AI stylist. Ask for outfit ideas, get styling advice, or describe what you're looking for and let Nomi recommend complete looks with quick-tap suggestions.
+
+### Results & Recommendations
+Get personalized outfit recommendations with style explanations, price ranges, brand names, and direct retailer links for each piece.
+
+### Saved Looks
+Collect and organize your favorite outfits. Save looks to boards and share with your community.
 
 ## Tech Stack
 
-- **Frontend:** Next.js, TypeScript, Tailwind CSS
+- **Frontend:** Next.js 16, TypeScript, Tailwind CSS
 - **Backend:** Next.js API routes
 - **ML/Style Engine:** Claude AI for style analysis and recommendations
 - **Data:** Real-time product scraping and retail integration
 - **Storage:** Supabase (PostgreSQL)
-
+- **Image Processing:** Sharp for thumbnail generation
 
 ## Getting Started
 
@@ -79,16 +88,15 @@ npm install
 cp .env.example .env.local
 
 # Add your API keys:
-# - CLAUDE_API_KEY (Anthropic)
-# - PINTEREST_API_KEY
+# - NEXT_PUBLIC_ANTHROPIC_API_KEY (Anthropic)
 # - SCRAPINGBEE_API_KEY (for product scraping)
+# - PINTEREST_API_KEY (optional, for Pinterest integration)
 
 # Run the dev server
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
-
 
 ## Environment Variables
 
@@ -99,22 +107,21 @@ NEXT_PUBLIC_ANTHROPIC_API_KEY=your_key_here
 # Product Link Scraping
 SCRAPINGBEE_API_KEY=your_key_here
 
-# Pinterest Integration
+# Pinterest Integration (optional)
 PINTEREST_API_KEY=your_key_here
 ```
 
-
 ## How to Use Nomi
 
-1. **Home Screen:** Click "Upload an Item"
-2. **Upload:** Take or select a photo of something you own
-3. **Describe:** Tell Nomi what kind of outfit you're building
-4. **Ask Nomi:** Chat with the AI to refine recommendations
-5. **Explore:** Browse recommendations, get style explanations
-6. **Buy:** Click through to the retailer and shop
+1. **Home Screen:** Upload a photo or paste a product link
+2. **Set Filters:** Choose what you're looking for (category, color, budget, etc.)
+3. **Get Recommendations:** Nomi scans retailers and shows matching pieces
+4. **Explore:** Browse trending fashion in the Explore tab
+5. **Ask Nomi:** Chat with AI for styling advice and recommendations
+6. **Save Looks:** Collect outfits you love in the Saved section
+7. **Shop:** Click any recommendation to buy directly from retailers
 
-
-## The ICP
+## The ICP (Ideal Customer Profile)
 
 **You** are someone who:
 - Already has a clear sense of personal style
@@ -123,18 +130,15 @@ PINTEREST_API_KEY=your_key_here
 - Values quality and fit over quantity
 - Gets frustrated when pieces "look good separately but don't work together"
 
-
 ## Why Nomi
 
 Most fashion recommendation engines optimize for *variety* and *volume*—they want you to buy more. Nomi optimizes for *fit* and *completeness*. We make one great outfit possible instead of 50 mediocre ones.
 
 The result: less decision fatigue, less buyer's remorse, more confidence in what you wear.
 
-
 ## Project Status
 
 Nomi is actively in development. Features like style learning (as you buy and rate items) and wardrobe analytics are on the roadmap.
-
 
 ## Contributing
 
@@ -151,11 +155,9 @@ git commit -m "feat: describe your change"
 git push origin feature/your-feature
 ```
 
-
 ## License
 
 MIT
-
 
 ## Questions?
 
