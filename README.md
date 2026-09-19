@@ -46,7 +46,7 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 | Upload | Explore | Ask Nomi |
 |--------|---------|----------|
-| ![Upload Screen](public/screenshots/upload-screen.svg) | ![Explore Hub](public/screenshots/explore-screen.svg) | ![Chat Screen](public/screenshots/chat-screen.svg) |
+| ![Upload Screen](public/screenshots/upload-screen.png) | ![Explore Hub](public/screenshots/explore-screen.png) | ![Chat Screen](public/screenshots/chat-screen.png) |
 | Upload a photo or paste a link to start building outfits | Browse trending fashion and curated collections by occasion | Chat with your personal AI stylist for outfit recommendations |
 
 ## Tech Stack
