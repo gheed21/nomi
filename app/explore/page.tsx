@@ -237,7 +237,7 @@ export default function ExplorePage() {
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    const saved = new Set(JSON.parse(localStorage.getItem("nomi_community_saved") ?? "[]"));
+    const saved = new Set(JSON.parse(localStorage.getItem("nomi_community_saved") ?? "[]") as string[]);
     setLooks(patched);
     setSavedIds(saved);
   }, []);
