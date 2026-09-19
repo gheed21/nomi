@@ -42,12 +42,13 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 📐 **Complete Your Look**: Find the missing pieces that make an outfit feel finished, not 47 options that might work.
 
-## Screenshots
+## Key Screens
 
-| Upload | Explore | Ask Nomi |
-|--------|---------|----------|
-| ![Upload Screen](public/screenshots/upload-screen.png) | ![Explore Hub](public/screenshots/explore-screen.png) | ![Chat Screen](public/screenshots/chat-screen.png) |
-| Upload a photo or paste a link to start building outfits | Browse trending fashion and curated collections by occasion | Chat with your personal AI stylist for outfit recommendations |
+**Upload Screen** - Upload a photo or paste a link to start building outfits
+
+**Explore Hub** - Browse trending fashion and curated collections by occasion
+
+**Ask Nomi** - Chat with your personal AI stylist for outfit recommendations
 
 ## Tech Stack
 
