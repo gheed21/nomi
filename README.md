@@ -44,14 +44,10 @@ Every recommendation links directly to the retailer. You're not buying random pi
 
 ## Screenshots
 
-**Main Upload Screen**
-Upload a photo of any piece or paste a product link. Nomi lets you choose between "Complete the Outfit" (find pieces to go with this item) or "Find Similar Styles" (discover similar pieces across retailers).
-
-**Explore Hub**
-Browse trending fashion moments, style occasions, and curated collections. Filter by #OOTD, #GoingOut, #Events, #Weddings, #Work, or #Secondhand to find inspiration and stay current on what's hot.
-
-**Ask Nomi Chat**
-Talk to your personal stylist. Ask for outfit ideas, get styling advice, or describe what you're looking for and let Nomi recommend complete looks. Quick-tap suggestions make it easy to explore: "What should I wear this week?", "Help me shop on a budget", "I have nothing to wear".
+| Upload | Explore | Ask Nomi |
+|--------|---------|----------|
+| ![Upload Screen](public/screenshots/upload-screen.png) | ![Explore Hub](public/screenshots/explore-screen.png) | ![Chat Screen](public/screenshots/chat-screen.png) |
+| Upload a photo or paste a link to start building outfits | Browse trending fashion and curated collections by occasion | Chat with your personal AI stylist for outfit recommendations |
 
 ## Tech Stack
 
