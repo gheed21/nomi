@@ -69,7 +69,13 @@ function passesConfidence(result: SerpShoppingResult, match: RawMatch): boolean 
 async function fetchSerpImage(
   match: RawMatch,
 ): Promise<{ image: string | null; productLink: string | null }> {
-  if (!SERPAPI_KEY) return { image: null, productLink: null };
+  // Demo mode: return a placeholder image if no API key
+  if (!SERPAPI_KEY) {
+    return {
+      image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect fill='%23e8e4dd' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='14' fill='%23999'%3EProduct%3C/text%3E%3C/svg%3E",
+      productLink: match.searchUrl ?? null,
+    };
+  }
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 4000);
