@@ -117,7 +117,7 @@ git push origin feature/your-feature
 
 ## License
 
-MIT
+CC BY-NC
 
 ## Questions
 
