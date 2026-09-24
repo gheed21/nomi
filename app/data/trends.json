@@ -1,111 +1,175 @@
 {
-  "generatedAt": "2026-06-28T02:45:47.800Z",
+  "generatedAt": "2026-07-15T23:06:14.682Z",
   "trends": [
     {
-      "title": "Pharrell's Luxury Surf Codes",
-      "summary": "The most-talked-about opening act of Paris Men's Fashion Week SS27 was Pharrell Williams staging a theatrical Louis Vuitton show around a towering artificial wave and real sand at the Cité Internationale Universitaire. The collection wove together monogrammed surfboards, technical wetsuits, cashmere cardigans styled as post-surf robes, and Hawaiian shirts, with denim and tailoring embellished in shells and precious stones — a restraint relative to prior seasons, but still a deliberate fusion of luxury craft with subcultural surf and skate energy. NSS Magazine noted that the show generated equal amounts of spectacle and controversy, drawing criticism for water waste on France's hottest recorded day.",
-      "whyItMatters": "Luxury houses are treating subculture-coded, off-duty pieces as covetable in their own right, not just resort filler — a cashmere cardigan styled as a post-surf robe is a shorthand for casual craftsmanship over pure formality.",
-      "themeType": "cultural",
-      "tags": ["coastal", "streetwear"],
-      "keywords": ["surf", "skate", "cashmere cardigan", "Hawaiian shirt"],
+      "title": "Schiaparelli's Synthetic Surrealism",
+      "summary": "Daniel Roseberry's Schiaparelli FW26 couture collection, titled 'The Call of the Void,' abandoned the house's traditional silks and satins in favor of latex, silicone, dried flowers, fish scales, and sheets of baked paint sculpted into boleros, bustiers, and dramatic jackets. Critics across The Zoe Report, Marie Claire Australia, and Elite Traveler noted that the collection distilled Schiaparelli's surrealist DNA into something more restrained and refined than expected, despite its extreme materials. The result was one of the most discussed debut moments of Couture Week, with Roseberry crediting his creative paralysis — and surrender to the unknown — as the generative force behind the work.",
+      "whyItMatters": "Roseberry's wholesale rejection of traditional couture fabrics signals that the industry's most experimental house is now treating material innovation as the primary site of luxury craftsmanship, not just silhouette.",
+      "themeType": "fabric",
+      "tags": [
+        "edgy"
+      ],
+      "keywords": [
+        "latex couture",
+        "sculpted silicone",
+        "surrealist tailoring",
+        "baked paint textile",
+        "fish scale embellishment"
+      ],
       "sources": [
         {
-          "name": "NSS Magazine",
-          "url": "https://www.nssmag.com/en/fashion/45928/louis-vuitton-men-ss27-review-artificial-wave-paris-hottest-day"
+          "name": "The Zoe Report",
+          "url": "https://www.thezoereport.com/fashion/paris-couture-week-fall-2026"
         },
         {
-          "name": "t2online.in",
-          "url": "https://t2online.in/goodlife/fashion-beauty/paris-fashion-week-men-s-ss27-highlights--louis-vuitton--dior--saint-laurent-and-the-biggest-moments-so-far/2005891"
+          "name": "Marie Claire Australia",
+          "url": "https://www.marieclaire.com.au/fashion/runway/every-standout-show-paris-haute-couture-week-aw2026/"
+        },
+        {
+          "name": "Elite Traveler",
+          "url": "https://elitetraveler.com/style/fashion/womens-style/paris-haute-couture-week-aw26-27-review"
+        },
+        {
+          "name": "WhoWhatWear",
+          "url": "https://www.whowhatwear.com/fashion/runway/paris-couture-week-july-2026-runway-trends"
         }
       ]
     },
     {
-      "title": "Jonathan Anderson's Dior Goes Out",
-      "summary": "Jonathan Anderson's third menswear show for Dior at Paris Men's FW SS27, soundtracked by Fred Again and staged at the Musée Nissim de Camondo, pushed the house toward a vibrant going-out aesthetic. Loosened tuxedos, distressed denim, metallic shorts, and disco-inspired boots shared the runway with oversized knit pieces shot through with sparkle, colorful tote bags, and oversized bow ties — making accessories as collectible as the clothes. Wallpaper* editors on the ground described the invitation itself, a disco-ball-shaped charm, as a clue: Anderson appears to be chasing something looser, more celebratory, and more personality-driven than classic Dior tailoring.",
-      "whyItMatters": "Going-out dressing is loosening up — editors are reading this as a move away from strict tailoring toward celebratory, personality-driven pieces, with accessories treated as equally collectible as the clothing itself.",
-      "themeType": "styling",
-      "tags": ["edgy", "colorful"],
-      "keywords": ["disco", "metallic", "distressed denim", "sparkle knit"],
-      "sources": [
-        {
-          "name": "Wallpaper*",
-          "url": "https://www.wallpaper.com/fashion-beauty/live/paris-fashion-week-mens-ss-2027"
-        },
-        {
-          "name": "t2online.in",
-          "url": "https://t2online.in/goodlife/fashion-beauty/paris-fashion-week-men-s-ss27-highlights--louis-vuitton--dior--saint-laurent-and-the-biggest-moments-so-far/2005891"
-        }
-      ]
-    },
-    {
-      "title": "Debut Season: Burton, Rider, Rogge",
-      "summary": "Paris Men's FW SS27 is being defined by a trio of highly anticipated creative director debuts. Sarah Burton showed her first dedicated Givenchy menswear collection at the house's Avenue George V headquarters, presenting butter-soft leather pieces, rugby shirts, and wide-leg trousers in blocks of pink and forest green, in dialogue with works by British artist Rachel Whiteread. Michael Rider's first full Celine runway show is regarded by NSS Magazine as the week's most closely watched — his vision described as 'fun, wearable' and possessing a 'playful sense of volume, decoration and colour.' Meanwhile, Belgian designer Meryll Rogge, winner of the 2025 Andam Prize, delivered a quietly impressive debut mixing layered bombers, floral prints, oversized knits, and striped bloomers through a personality-driven rather than trend-chasing lens.",
-      "whyItMatters": "Three major houses under new creative direction are all steering toward personality-driven, wearable design over trend-chasing — an early signal for where directional fashion moves next.",
+      "title": "Jonathan Anderson's Art-Lab Dior",
+      "summary": "For his sophomore FW26 haute couture collection at Dior, Jonathan Anderson drew deeply from American sculptor Lynda Benglis, translating her fluid organic forms into heavily manipulated fabrics — knotted, crinkled, wrapped — alongside sheer holographic textiles and stone jewelry crafted by artisans in Jaipur. WWD observed that Anderson is treating Dior as a creative laboratory, with silver lamé draped into bows referencing Benglis's metallic 'Goliath' sculpture, while abstract skirts in silver netting and layered chiffon pushed the collection firmly into art-world territory. The show's closing wedding dress — arriving just three days after Anderson also dressed Taylor Swift for her July 3 ceremony — generated over $15 million in media impact value for the house in a single weekend.",
+      "whyItMatters": "Anderson's approach — collapsing the boundary between couture atelier and artist's studio — suggests that the most compelling luxury narrative right now is art collaboration rather than heritage nostalgia.",
       "themeType": "designer",
-      "tags": ["colorful", "boho"],
-      "keywords": ["wide-leg trouser", "color block", "oversized knit", "floral print"],
+      "tags": [
+        "romantic",
+        "minimal"
+      ],
+      "keywords": [
+        "holographic textiles",
+        "Benglis-inspired draping",
+        "knotted fabric manipulation",
+        "Jaipur stone jewelry",
+        "sculptural couture gowns"
+      ],
       "sources": [
         {
-          "name": "Wallpaper*",
-          "url": "https://www.wallpaper.com/fashion-beauty/live/paris-fashion-week-mens-ss-2027"
+          "name": "WWD",
+          "url": "https://wwd.com/runway/fall-couture-2026/paris/christian-dior/review/"
         },
         {
-          "name": "NSS Magazine",
-          "url": "https://www.nssmag.com/en/fashion/45914/5-things-to-expect-from-paris-fashion-week-men-s-ss27"
+          "name": "Mega Asia",
+          "url": "https://mega-asia.com/fashion/runway/dior-haute-couture-fw26-jonathan-anderson-review/"
         },
         {
-          "name": "t2online.in",
-          "url": "https://t2online.in/goodlife/fashion-beauty/paris-fashion-week-men-s-ss27-highlights--louis-vuitton--dior--saint-laurent-and-the-biggest-moments-so-far/2005891"
+          "name": "Business of Fashion",
+          "url": "https://www.businessoffashion.com/reviews/fashion-week/autumn-winter-2026-haute-couture-dior/"
+        },
+        {
+          "name": "Grazia Singapore",
+          "url": "https://grazia.sg/fashion/paris-haute-couture-week-fall-winter-2026-dior-chanel/"
         }
       ]
     },
     {
-      "title": "Soshiotsuki: Tailoring's New Name",
-      "summary": "The breakout emerging designer moment of Paris Men's FW SS27 belongs to Soshi Otsuki, whose label Soshiotsuki is making its Paris debut this week after winning the 2025 LVMH Prize. NSS Magazine calls him 'the true new addition of the season,' noting that the Bunka Fashion College graduate has built a cult following around oversized, precisely constructed tailoring that reinterprets classic menswear with near-military discipline. His Zara collaboration earlier in the year gave him broader visibility, but the Paris runway is the moment critics have been watching for — the first major assessment of whether his singular vision can scale.",
-      "whyItMatters": "A rising name worth knowing if you gravitate toward sharp, oversized tailoring — his rapid trajectory (LVMH Prize, a Zara collab, now a Paris debut) suggests this precise-but-relaxed silhouette is heading toward the mainstream.",
-      "themeType": "designer",
-      "tags": ["workwear", "edgy"],
-      "keywords": ["oversized tailoring", "military-inspired construction"],
-      "sources": [
-        {
-          "name": "NSS Magazine",
-          "url": "https://www.nssmag.com/en/fashion/45914/5-things-to-expect-from-paris-fashion-week-men-s-ss27"
-        },
-        {
-          "name": "FashionNetwork UK",
-          "url": "https://uk.fashionnetwork.com/news/Celine-saint-laurent-hed-mayner-back-on-paris-fashion-week-men-calendar-in-june,1834543.html"
-        }
-      ]
-    },
-    {
-      "title": "Hermès Goes Gaucho, Earthy Palette Rises",
-      "summary": "In lieu of its usual runway show — as Hermès transitions toward Grace Wales Bonner's directorial debut next January — the house's design team delivered a presentation built around the Gaucho, the itinerant horseman of the South American frontier. Wallpaper* editors on the ground reported high-waisted tapering slacks in bombacha style, classic Hermès silk scarves worn as rustic neckerchiefs, and a palette of dusty plains: earthy browns and muted teal punctuated by cacti and jumping-fence prints with a flash of lavender. The earthy, travel-inflected mood is one of the strongest recurring color stories across the week, and Hermès' grounded execution gives it real editorial credibility.",
-      "whyItMatters": "Earthy, travel-inflected color palettes are showing up as one of the strongest cross-brand signals this week — a move away from bright, maximalist color toward grounded neutrals with an unexpected twist.",
-      "themeType": "color",
-      "tags": ["oldmoney", "boho"],
-      "keywords": ["earthy palette", "high-waisted trouser", "silk scarf"],
-      "sources": [
-        {
-          "name": "Wallpaper*",
-          "url": "https://www.wallpaper.com/fashion-beauty/live/paris-fashion-week-mens-ss-2027"
-        }
-      ]
-    },
-    {
-      "title": "World Cup Dressing Enters the Street",
-      "summary": "With the FIFA World Cup underway across North America since June 11, Who What Wear's editors are tracking how soccer fandom is shaping real-world style this week. Jerseys are being styled with vintage Levi's, poplin skirts, and track pants; shorts are worn with bikini tops and ballet flats as people dress for matches. L.A. street-style microtrends reported this week by Who What Wear also include tube tops — returning as a Y2K staple — bug-eye sunglasses frames, and printed slip dresses in florals and polka dots, suggesting that the cultural moment of a global tournament is pulling fashion toward a louder, team-aligned, expressive summer register.",
-      "whyItMatters": "A major cultural moment is visibly reshaping everyday street style — worth tracking if you like dressing around real-world events rather than only runway cues.",
+      "title": "Matthieu Blazy's Fairy-Tale Chanel",
+      "summary": "Matthieu Blazy's second Chanel haute couture collection for FW26 was built around Gabrielle Chanel's personal library of fairy tales, reimagining house codes — suits, braids, tweed, chains — through the lens of Jack and the Beanstalk and Goldilocks, with a beanstalk vine motif threading literally through seams, heels, and hemlines. WhoWhatWear described the collection as a whimsical universe materialised on the runway, complete with vine-wrapped heels and magpie-inspired accessories, while Grazia noted that the Chanel Haute Couture show emphasized delicacy and translucency over structural spectacle. The collection, presented at the Grand Palais, cemented Blazy's ongoing commitment to narrative-driven couture that feels both personal and rooted in the maison's savoir-faire.",
+      "whyItMatters": "Blazy's turn toward literary and folkloric storytelling at Chanel reflects a broader couture shift away from concept-led abstraction toward emotionally legible, character-driven collections that resonate with both existing clients and a new pop-culture-fluent audience.",
       "themeType": "cultural",
-      "tags": ["sporty", "streetwear", "cute"],
-      "keywords": ["Y2K", "jersey styling", "polka dot"],
+      "tags": [
+        "romantic",
+        "vintage"
+      ],
+      "keywords": [
+        "tweed reimagined",
+        "vine motif embroidery",
+        "fairy-tale couture",
+        "translucent guipure lace",
+        "beanstalk heel"
+      ],
       "sources": [
         {
-          "name": "Who What Wear",
-          "url": "https://www.whowhatwear.com/fashion/summer/summer-fashion-trends-2026"
+          "name": "WhoWhatWear",
+          "url": "https://www.whowhatwear.com/fashion/runway/paris-couture-week-july-2026-runway-trends"
         },
         {
-          "name": "Who What Wear",
-          "url": "https://www.whowhatwear.com/fashion/trends/microtrends-los-angeles-summer-2026"
+          "name": "Grazia Singapore",
+          "url": "https://grazia.sg/fashion/paris-haute-couture-week-fall-winter-2026-dior-chanel/"
+        },
+        {
+          "name": "The Zoe Report",
+          "url": "https://www.thezoereport.com/fashion/paris-couture-week-fall-2026"
+        },
+        {
+          "name": "Marie Claire Australia",
+          "url": "https://www.marieclaire.com.au/fashion/runway/every-standout-show-paris-haute-couture-week-aw2026/"
+        }
+      ]
+    },
+    {
+      "title": "Piccioli Brings Color Back to Balenciaga Couture",
+      "summary": "Pierpaolo Piccioli's long-awaited couture debut at Balenciaga — the house's 55th couture collection — fused Cristóbal's signature sculptural silhouettes with Piccioli's own painterly, color-saturated instincts, pairing phosphorescent yellow coats with lilac feathered trousers and crisp oversized shirting with evening skirts. Coveteur highlighted the balloon silhouette — central to Balenciaga since 1953 — reinterpreted in jackets and gowns alongside a drop-waist sack dress in vibrant sequins, while Lampoon Magazine noted that individual pieces required months of construction: one bustier alone required over 24,000 feathers of shredded gazar. The show was widely read as a confident reset for the house — subtracting the Demna-era irony and restoring an emotional, craft-first approach that reviewers described as a homecoming for one of fashion's great couturiers.",
+      "whyItMatters": "Piccioli's debut signals that luxury fashion's appetite for provocation and streetwear irony has exhausted itself, and that the pendulum is swinging toward sincere, color-rich, craft-obsessed romanticism as the new couture authority.",
+      "themeType": "designer",
+      "tags": [
+        "colorful",
+        "romantic",
+        "formal"
+      ],
+      "keywords": [
+        "balloon silhouette",
+        "feathered gazar",
+        "saturated couture palette",
+        "drop-waist evening gown",
+        "sculptural cocoon jacket"
+      ],
+      "sources": [
+        {
+          "name": "Coveteur",
+          "url": "https://coveteur.com/balenciaga-haute-couture-fall-winter-2026-review"
+        },
+        {
+          "name": "Lampoon Magazine",
+          "url": "https://lampoonmagazine.com/balenciaga-haute-couture-debut-pierpaolo-piccioli/"
+        },
+        {
+          "name": "EE72",
+          "url": "https://ee72.com/pierpaolo-picciolis-haute-homecoming-at-balenciaga/"
+        },
+        {
+          "name": "The Zoe Report",
+          "url": "https://www.thezoereport.com/fashion/paris-couture-week-fall-2026"
+        }
+      ]
+    },
+    {
+      "title": "The Celebrity Wedding Dress Effect",
+      "summary": "The July 3 wedding of Taylor Swift and Travis Kelce — at which Swift wore a bespoke Jonathan Anderson-designed Dior Haute Couture gown — dominated fashion coverage this week, with Forbes noting the potential for the still-unseen dress to reshape bridal trends the way Diana's 1981 gown or Carolyn Bessette-Kennedy's 1996 slip dress did for their respective eras. Yahoo Entertainment reported that the couture show closing look — a romantic off-the-shoulder white gown shown at Dior's FW26 presentation just three days after the wedding — intensified speculation and generated $15 million in media impact value for the house in a single weekend. Separately, Forbes highlighted that Dua Lipa's 2026 wedding looks — including a white Schiaparelli couture skirt suit and a feather-dappled Chanel Haute Couture gown — are also fueling a broader turn toward sculptural, fashion-house bridal dressing over traditional white-gown convention.",
+      "whyItMatters": "When two of the year's highest-profile brides choose experimental couture houses over heritage bridal designers, it accelerates a cultural permission slip for fashion-forward brides to prioritize creative vision over convention — with direct downstream effects on wedding dress search behavior and bridal editorial.",
+      "themeType": "cultural",
+      "tags": [
+        "romantic",
+        "formal",
+        "classic"
+      ],
+      "keywords": [
+        "haute couture bridal",
+        "off-the-shoulder silhouette",
+        "Chantilly lace gown",
+        "feathered train",
+        "celebrity wedding dressing"
+      ],
+      "sources": [
+        {
+          "name": "Forbes",
+          "url": "https://www.forbes.com/sites/rachelburchfield/2026/07/06/what-taylor-swift-s-dior-wedding-dress-looks-like-remains-a-mystery-but-here-are-a-few-bridal-trends-that-are-in-right-now/"
+        },
+        {
+          "name": "Yahoo Entertainment",
+          "url": "https://www.yahoo.com/entertainment/celebrity/articles/everything-know-taylor-swift-history-152143201.html"
+        },
+        {
+          "name": "WWD",
+          "url": "https://wwd.com/runway/fall-couture-2026/paris/christian-dior/review/"
         }
       ]
     }
